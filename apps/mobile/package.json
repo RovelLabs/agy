@@ -1,0 +1,16 @@
+{
+  "name": "@operon/mobile",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "OPERON Mobile Platform Adapters (Android Share Targets & iOS Share Extensions)",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@operon/core": "workspace:*"
+  },
+  "keywords": ["operon", "android", "ios", "share-sheet", "mobile-automation"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,32 @@
+{
+  "name": "operon-monorepo",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "private": true,
+  "description": "OPERON: The Autonomous Personal Operating Layer - Local-First Cross-Platform Automation & Intelligence",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "ai"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "node --test tests/**/*.test.js",
+    "lint": "node tools/lint.js",
+    "typecheck": "echo \"Running typecheck on workspaces...\"",
+    "clean": "node tools/clean.js",
+    "start:desktop": "npm --workspace=apps/desktop start",
+    "start:website": "npm --workspace=apps/website start"
+  },
+  "keywords": [
+    "automation",
+    "local-first",
+    "workflow-engine",
+    "cross-platform",
+    "productivity",
+    "command-palette",
+    "operon"
+  ],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

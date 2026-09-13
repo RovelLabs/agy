@@ -1,0 +1,20 @@
+{
+  "name": "@operon/desktop",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "OPERON Desktop Native Application Shell (Windows & macOS)",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@operon/core": "workspace:*",
+    "@operon/storage": "workspace:*",
+    "@operon/design": "workspace:*",
+    "@operon/ai": "workspace:*"
+  },
+  "keywords": ["operon", "desktop", "tray", "hotkey", "hud", "overlay"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

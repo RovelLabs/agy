@@ -1,0 +1,14 @@
+{
+  "name": "@operon/core",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "Deterministic Workflow DAG & Action Engine for Operon",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "keywords": ["operon", "automation", "workflow", "dag", "engine"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

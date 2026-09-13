@@ -1,0 +1,13 @@
+name = "yellow-water-78f7"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+account_id = "0a4357eeb937ef38bc7b1889527e12c8"
+
+[vars]
+ENVIRONMENT = "production"
+VERSION = "1.0.0-rc.1"
+BRAND_NAME = "OPERON"
+
+# Observability
+[observability]
+enabled = true

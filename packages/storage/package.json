@@ -1,0 +1,13 @@
+{
+  "name": "@operon/storage",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "Local-First Storage & Migration Layer for Operon",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "keywords": ["operon", "storage", "local-first", "sqlite", "migrations"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

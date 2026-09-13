@@ -1,0 +1,19 @@
+{
+  "name": "@operon/website",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "OPERON Official Product Website - Cloudflare Worker Edge Distribution",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@operon/core": "workspace:*",
+    "@operon/design": "workspace:*"
+  },
+  "keywords": ["operon", "website", "landing", "cloudflare-worker"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

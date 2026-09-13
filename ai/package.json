@@ -1,0 +1,16 @@
+{
+  "name": "@operon/ai",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "Local AI Workflow Compiler & Intelligence Subsystem for Operon",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@operon/core": "workspace:*"
+  },
+  "keywords": ["operon", "ai", "slm", "compiler", "local-first", "intent-parser"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

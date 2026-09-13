@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="graphite">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPERON HUD</title>
+  <link rel="stylesheet" href="hud.css">
+</head>
+<body>
+  <div class="op-overlay" id="hudOverlay">
+    <!-- Top Search Header -->
+    <header class="op-search-header">
+      <div class="op-brand-glyph">
+        <svg viewBox="0 0 32 32" class="op-logo-svg">
+          <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5" fill="#121518" stroke="#38BDF8" stroke-width="2.5"/>
+          <circle cx="16" cy="16" r="3.5" fill="#38BDF8"/>
+        </svg>
+      </div>
+      <input 
+        type="text" 
+        id="opSearchInput" 
+        class="op-search-input" 
+        placeholder="Type a command, recipe, or describe a routine..." 
+        autocomplete="off" 
+        spellcheck="false"
+        autofocus
+      />
+      <div class="op-header-badges">
+        <span class="op-badge-kbd">ESC</span>
+      </div>
+    </header>
+
+    <!-- Filter Categories -->
+    <nav class="op-filter-bar">
+      <button class="op-filter-chip active" data-category="all">All</button>
+      <button class="op-filter-chip" data-category="text">Text</button>
+      <button class="op-filter-chip" data-category="clipboard">Clipboard</button>
+      <button class="op-filter-chip" data-category="image">Image</button>
+      <button class="op-filter-chip" data-category="file">File</button>
+      <button class="op-filter-chip" data-category="developer">Developer</button>
+      <button class="op-filter-chip" data-category="system">System</button>
+      <div class="op-filter-spacer"></div>
+      <button class="op-theme-toggle" id="themeToggleBtn" title="Switch Theme">◐</button>
+    </nav>
+
+    <!-- Results List & Content Pane -->
+    <main class="op-results-pane">
+      <div class="op-results-list" id="opResultsList" role="listbox">
+        <!-- Injected dynamically -->
+      </div>
+    </main>
+
+    <!-- AI Natural Language Compiler Preview Bar -->
+    <section class="op-ai-strip" id="opAiStrip" style="display: none;">
+      <div class="op-ai-icon">✨</div>
+      <div class="op-ai-body">
+        <div class="op-ai-title">Local AI Compiler Ready</div>
+        <div class="op-ai-desc" id="opAiDesc">Press Enter to compile intent into a validated, offline automation.</div>
+      </div>
+      <button class="op-btn-primary" id="opAiCompileBtn">Compile</button>
+    </section>
+
+    <!-- Status Footer -->
+    <footer class="op-footer">
+      <div class="op-footer-keys">
+        <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+        <span><kbd>↵</kbd> Execute</span>
+        <span><kbd>Tab</kbd> Preview</span>
+      </div>
+      <div class="op-footer-info">
+        <span id="opPerfMetrics">Ready • Sub-1ms DAG</span>
+        <span class="op-brand-label">OPERON 1.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Plan Preview Modal (Quarantine Sandbox) -->
+  <div class="op-modal-backdrop" id="opModalBackdrop" style="display: none;">
+    <div class="op-modal">
+      <div class="op-modal-header">
+        <h3 id="opModalTitle">Automation Plan Preview</h3>
+        <button class="op-modal-close" id="opModalCloseBtn">&times;</button>
+      </div>
+      <div class="op-modal-body" id="opModalBody">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="op-modal-footer">
+        <button class="op-btn-secondary" id="opModalCancelBtn">Cancel</button>
+        <button class="op-btn-primary" id="opModalExecuteBtn">Approve & Execute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="op-toast-container" id="opToastContainer"></div>
+
+  <script type="module" src="hud.js"></script>
+</body>
+</html>

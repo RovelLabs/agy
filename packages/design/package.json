@@ -1,0 +1,10 @@
+{
+  "name": "@operon/design",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "OPERON Design System: Apple-Grade Refinement meets Precision Linux Rice",
+  "main": "src/index.js",
+  "keywords": ["operon", "design-system", "tokens", "themes", "dark-mode"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}
