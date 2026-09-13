@@ -26,6 +26,7 @@
         autofocus
       />
       <div class="op-header-badges">
+        <span class="op-badge-pro" id="opProBadge" title="Click to view license & upgrade options">FREE</span>
         <span class="op-badge-kbd">ESC</span>
       </div>
     </header>
@@ -87,6 +88,57 @@
       <div class="op-modal-footer">
         <button class="op-btn-secondary" id="opModalCancelBtn">Cancel</button>
         <button class="op-btn-primary" id="opModalExecuteBtn">Approve & Execute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upgrade & License Activation Modal -->
+  <div class="op-modal-backdrop" id="opUpgradeModalBackdrop" style="display: none;">
+    <div class="op-modal">
+      <div class="op-modal-header">
+        <h3 id="opUpgradeModalTitle">Operon Pro License & Capabilities</h3>
+        <button class="op-modal-close" id="opUpgradeModalCloseBtn">&times;</button>
+      </div>
+      <div class="op-modal-body" id="opUpgradeModalBody">
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 14px; font-weight: 600; color: var(--op-text-primary); margin-bottom: 4px;">
+            Current Status: <span id="opCurrentStatusText" style="color: var(--op-accent);">Free Community Core</span>
+          </div>
+          <p style="font-size: 12px; color: var(--op-text-secondary); margin: 0;">
+            All 15 core recipes and sub-1ms execution remain free forever. Pro unlocks unlimited custom workflows, large-scale batch file pipelines, developer tool packs, and local AI.
+          </p>
+        </div>
+
+        <div style="background: var(--op-surface-0); border: 1px solid var(--op-border-faint); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--op-text-primary);">Transparent Options:</div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Pro Annual</span>
+            <strong style="color: var(--op-text-primary);">$39 / year</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Pro Lifetime Local</span>
+            <strong style="color: var(--op-accent);">$79 one-time</strong>
+          </div>
+        </div>
+
+        <div id="opTrialSection" style="margin-bottom: 16px;">
+          <button class="op-btn-primary" id="opStartTrialBtn" style="width: 100%; padding: 10px; font-size: 13px;">
+            ⚡ Start 14-Day Free Trial (No Card Needed)
+          </button>
+        </div>
+
+        <div style="border-top: 1px solid var(--op-border-faint); padding-top: 14px;">
+          <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--op-text-tertiary); margin-bottom: 6px;">
+            Have an Offline License Key?
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="opLicenseKeyInput" placeholder="OPKEY-..." style="flex: 1; background: var(--op-surface-0); border: 1px solid var(--op-border-subtle); border-radius: 6px; padding: 8px 10px; color: var(--op-text-primary); font-family: var(--op-font-mono); font-size: 11px;" />
+            <button class="op-btn-secondary" id="opActivateKeyBtn">Activate</button>
+          </div>
+        </div>
+      </div>
+      <div class="op-modal-footer">
+        <button class="op-btn-secondary" id="opUpgradeModalDismissBtn">Close</button>
       </div>
     </div>
   </div>

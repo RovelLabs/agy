@@ -61,6 +61,24 @@ body {
   font-weight: 400;
 }
 
+.op-badge-pro {
+  font-family: var(--op-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid var(--op-accent);
+  color: var(--op-accent);
+  cursor: pointer;
+  transition: all var(--op-anim-fast);
+}
+
+.op-badge-pro:hover {
+  background: var(--op-accent);
+  color: #000;
+}
+
 .op-badge-kbd {
   font-family: var(--op-font-mono);
   font-size: 10px;

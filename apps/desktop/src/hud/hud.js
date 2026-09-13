@@ -3,6 +3,7 @@
  */
 import { coreRecipes, WorkflowEngine, Capabilities, ExecutionStatus } from '/packages/core/src/index.js';
 import { AIWorkflowCompiler } from '/ai/src/index.js';
+import { EntitlementManager, EntitlementTier, ProductCapability } from '/packages/entitlements/src/index.js';
 
 class OperonHUDController {
   constructor() {
@@ -14,6 +15,7 @@ class OperonHUDController {
     this.themes = ['graphite', 'midnight', 'oled', 'lunar'];
 
     this.compiler = new AIWorkflowCompiler();
+    this.entitlements = new EntitlementManager();
     this.mockClipboard = 'https://github.com/RovelLabs/agy?utm_source=testing&ref=operon';
     
     this.engine = new WorkflowEngine({
@@ -32,7 +34,13 @@ class OperonHUDController {
 
     this.initElements();
     this.bindEvents();
+    this.initEntitlements();
     this.render();
+  }
+
+  async initEntitlements() {
+    await this.entitlements.init();
+    this.updateProStatusUI();
   }
 
   initElements() {
@@ -51,6 +59,17 @@ class OperonHUDController {
     this.modalExecuteBtn = document.getElementById('opModalExecuteBtn');
     this.toastContainer = document.getElementById('opToastContainer');
     this.perfMetrics = document.getElementById('opPerfMetrics');
+
+    // Upgrade Modal Elements
+    this.proBadge = document.getElementById('opProBadge');
+    this.upgradeModal = document.getElementById('opUpgradeModalBackdrop');
+    this.upgradeCloseBtn = document.getElementById('opUpgradeModalCloseBtn');
+    this.upgradeDismissBtn = document.getElementById('opUpgradeModalDismissBtn');
+    this.statusText = document.getElementById('opCurrentStatusText');
+    this.startTrialBtn = document.getElementById('opStartTrialBtn');
+    this.activateKeyBtn = document.getElementById('opActivateKeyBtn');
+    this.licenseInput = document.getElementById('opLicenseKeyInput');
+    this.trialSection = document.getElementById('opTrialSection');
   }
 
   bindEvents() {
@@ -72,6 +91,73 @@ class OperonHUDController {
     this.modalCloseBtn.addEventListener('click', () => this.closeModal());
     this.modalCancelBtn.addEventListener('click', () => this.closeModal());
     this.modalExecuteBtn.addEventListener('click', () => this.executePendingWorkflow());
+
+    // Upgrade & License modal events
+    this.proBadge.addEventListener('click', () => this.openUpgradeModal());
+    this.upgradeCloseBtn.addEventListener('click', () => this.closeUpgradeModal());
+    this.upgradeDismissBtn.addEventListener('click', () => this.closeUpgradeModal());
+    this.startTrialBtn.addEventListener('click', () => this.handleStartTrial());
+    this.activateKeyBtn.addEventListener('click', () => this.handleActivateKey());
+  }
+
+  openUpgradeModal() {
+    this.updateProStatusUI();
+    this.upgradeModal.style.display = 'flex';
+  }
+
+  closeUpgradeModal() {
+    this.upgradeModal.style.display = 'none';
+    this.searchInput.focus();
+  }
+
+  updateProStatusUI() {
+    const status = this.entitlements.getStatus();
+    if (status.tier === EntitlementTier.PRO_LIFETIME) {
+      this.proBadge.textContent = 'PRO LIFETIME';
+      this.proBadge.style.color = '#34D399';
+      this.proBadge.style.borderColor = '#34D399';
+      this.statusText.textContent = 'Pro Lifetime (Permanent Active)';
+      this.statusText.style.color = '#34D399';
+      this.trialSection.style.display = 'none';
+    } else if (status.isTrial) {
+      this.proBadge.textContent = `TRIAL (${status.trialDaysRemaining}d)`;
+      this.proBadge.style.color = '#FBBF24';
+      this.proBadge.style.borderColor = '#FBBF24';
+      this.statusText.textContent = `Pro Trial (${status.trialDaysRemaining} days remaining)`;
+      this.statusText.style.color = '#FBBF24';
+      this.trialSection.style.display = 'none';
+    } else {
+      this.proBadge.textContent = 'FREE';
+      this.proBadge.style.color = 'var(--op-accent)';
+      this.proBadge.style.borderColor = 'var(--op-accent)';
+      this.statusText.textContent = 'Free Community Core';
+      this.statusText.style.color = 'var(--op-accent)';
+      this.trialSection.style.display = 'block';
+    }
+  }
+
+  async handleStartTrial() {
+    try {
+      await this.entitlements.startTrial(14);
+      this.updateProStatusUI();
+      this.showToast('✓ 14-Day Free Pro Trial Activated!');
+    } catch (err) {
+      this.showToast(`✕ ${err.message}`);
+    }
+  }
+
+  async handleActivateKey() {
+    const key = this.licenseInput.value.trim();
+    if (!key) return;
+
+    try {
+      await this.entitlements.activateLicense(key);
+      this.updateProStatusUI();
+      this.licenseInput.value = '';
+      this.showToast('✓ License Successfully Activated Offline!');
+    } catch (err) {
+      this.showToast(`✕ ${err.message}`);
+    }
   }
 
   toggleTheme() {
@@ -186,6 +272,13 @@ class OperonHUDController {
   async compileNaturalLanguage() {
     const query = this.searchInput.value.trim();
     if (!query) return;
+
+    // Capability Gate: Local AI Compiler
+    if (!this.entitlements.hasCapability(ProductCapability.LOCAL_AI_COMPILER)) {
+      this.showToast('ℹ Natural Language AI Compiler requires Operon Pro.');
+      this.openUpgradeModal();
+      return;
+    }
 
     this.showToast('Compiling intent offline...');
     const result = await this.compiler.compile(query);

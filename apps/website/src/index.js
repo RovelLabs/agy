@@ -542,36 +542,62 @@ function renderWebsite(url) {
 
     <!-- Pricing -->
     <section class="pricing-section" id="pricing">
-      <h2 style="font-size: 28px; margin-bottom: 8px;">Fair, Anti-Fatigue Pricing</h2>
-      <p style="color: var(--text-2);">No $20/month SaaS traps for a local utility. Pay once or use Community Core forever.</p>
-      <div class="pricing-grid">
+      <h2 style="font-size: 28px; margin-bottom: 8px;">Fair, Anti-Subscription Fatigue Pricing</h2>
+      <p style="color: var(--text-2); max-width: 620px; margin: 0 auto;">
+        No recurring $20/month SaaS traps for a local utility. Start free, try Pro without a credit card, or own it permanently with a Lifetime license.
+      </p>
+      <div class="pricing-grid" style="grid-template-columns: repeat(3, 1fr); max-width: 1040px;">
+        <!-- Community Core -->
         <div class="pricing-card">
           <div class="pricing-tier">Community Core</div>
           <div class="pricing-price">$0</div>
-          <p style="color: var(--text-2); font-size: 13px;">Free forever. No account required.</p>
+          <p style="color: var(--text-2); font-size: 13px;">Free forever. No credit card required.</p>
           <ul class="pricing-features">
             <li>✓ All 15 Core Curated Recipes</li>
             <li>✓ Instant Alt+Space Command HUD</li>
+            <li>✓ Sub-1ms deterministic execution</li>
             <li>✓ Local-first privacy guarantee</li>
             <li>✓ Standard Dark & OLED Themes</li>
-            <li>✓ Unlimited local executions</li>
+            <li>✓ Unlimited local recipe executions</li>
           </ul>
           <a href="#downloads" class="btn-lg btn-secondary" style="width: 100%; text-align: center; justify-content: center;">Download Free</a>
         </div>
-        <div class="pricing-card pro">
-          <div class="pricing-tier">Operon Pro</div>
-          <div class="pricing-price">$39 <span style="font-size: 14px; font-weight: normal; color: var(--text-2);">one-time lifetime</span></div>
-          <p style="color: var(--text-2); font-size: 13px;">For power users, creators & developers.</p>
+
+        <!-- Pro Annual -->
+        <div class="pricing-card">
+          <div class="pricing-tier">Pro Annual</div>
+          <div class="pricing-price">$39 <span style="font-size: 14px; font-weight: normal; color: var(--text-2);">/ year</span></div>
+          <p style="color: var(--text-2); font-size: 13px;">$3.25/mo billed annually. 14-day free trial.</p>
           <ul class="pricing-features">
             <li>✓ Unlimited custom DAG workflows</li>
+            <li>✓ Local AI Natural Language Compiler</li>
+            <li>✓ Large-scale batch file pipelines (>1000 items)</li>
             <li>✓ Developer Pack (JWT, JSON, cURL, RegEx)</li>
-            <li>✓ Local SLM Natural Language Compiler</li>
-            <li>✓ Large-scale batch file transforms</li>
+            <li>✓ Unlimited encrypted local history</li>
             <li>✓ Custom rice themes & accent editor</li>
-            <li>✓ Future peer-to-peer encrypted sync</li>
           </ul>
-          <a href="#downloads" class="btn-lg btn-primary" style="width: 100%; text-align: center; justify-content: center;">Get Operon Pro</a>
+          <a href="#downloads" class="btn-lg btn-secondary" style="width: 100%; text-align: center; justify-content: center;">Start 14-Day Trial</a>
         </div>
+
+        <!-- Pro Lifetime -->
+        <div class="pricing-card pro">
+          <div class="pricing-tier">Pro Lifetime Local</div>
+          <div class="pricing-price">$79 <span style="font-size: 14px; font-weight: normal; color: var(--text-2);">one-time</span></div>
+          <p style="color: var(--text-2); font-size: 13px;">Own your automation layer forever.</p>
+          <ul class="pricing-features">
+            <li>✓ <strong>All Pro Local Features Permanently</strong></li>
+            <li>✓ Cryptographic offline license key</li>
+            <li>✓ All 1.x and 2.x updates included</li>
+            <li>✓ Works 100% offline with zero server check</li>
+            <li>✓ Transferable across your personal devices</li>
+            <li>✓ Priority bug fixes & community discord</li>
+          </ul>
+          <a href="#downloads" class="btn-lg btn-primary" style="width: 100%; text-align: center; justify-content: center;">Get Lifetime Pass</a>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; font-size: 12px; color: var(--text-3); max-width: 680px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+        <strong>Honest Lifetime Terms:</strong> Pro Lifetime Local provides perpetual entitlement to all local software capabilities on your personal hardware. Future optional server-side sync and hosted heavy compute models (Plus Cloud at $7.99/mo) are separate subscriptions to protect company economic sustainability.
       </div>
     </section>
 

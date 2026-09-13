@@ -29,11 +29,13 @@
 | **Storage & Migrations** | `packages/storage/` | **COMPLETE** | 4/4 Tests Passing | Atomic writes, E2EE sync-ready |
 | **Design System & Themes** | `packages/design/` | **COMPLETE** | Verified in HUD & Site | 4 Themes: Graphite, Midnight, OLED, Lunar |
 | **Desktop Application & HUD** | `apps/desktop/` | **COMPLETE** | Verified on localhost:49215 | `Alt+Space` HUD, sub-16ms invocation |
+| **Entitlement & Licensing Engine**| `packages/entitlements/`| **COMPLETE** | 5/5 Tests Passing | Offline Ed25519/HMAC signed keys, 14d trial |
+| **Privacy Analytics Collector** | `packages/analytics/` | **COMPLETE** | 3/3 Tests Passing | Zero data leakage, strict whitelist |
 | **Mobile Adapters** | `apps/mobile/` | **COMPLETE** | 2/2 Tests Passing | Android Intent & iOS ShareExtension |
 | **Local AI Compiler & Validator**| `ai/` | **COMPLETE** | 4/4 Tests Passing | Intent-to-DAG, Safety sandboxing |
 | **QA Breaker Stress Tests** | `tests/breaker_qa.test.js` | **COMPLETE** | 6/6 Breaker Tests Passing | Timeouts, injections, race conditions |
-| **Cloudflare Edge Site** | `apps/website/` | **COMPLETE** | Worker & API Verified | Live interactive playground & downloads |
-| **CI/CD Pipeline** | `.github/workflows/ci.yml` | **COMPLETE** | Multi-OS (Win, Mac, Linux) | Automated testing & secret scanning |
+| **Cloudflare Edge Site** | `apps/website/` | **COMPLETE** | Worker & API Verified | Live interactive playground, pricing & terms |
+| **CI/CD Pipeline** | `.github/workflows/ci.yml` | **COMPLETE** | Multi-OS (Win, Mac, Linux) | 36 automated tests across 7 test suites |
 
 ---
 

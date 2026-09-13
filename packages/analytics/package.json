@@ -1,0 +1,17 @@
+{
+  "name": "@operon/analytics",
+  "version": "1.0.0-rc.1",
+  "type": "module",
+  "description": "OPERON Privacy-Preserving Commercial Analytics Subsystem",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@operon/core": "workspace:*",
+    "@operon/storage": "workspace:*"
+  },
+  "keywords": ["operon", "analytics", "privacy", "conversion-funnel"],
+  "author": "Rovel Labs",
+  "license": "UNLICENSED"
+}

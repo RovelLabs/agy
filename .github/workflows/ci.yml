@@ -43,6 +43,8 @@ jobs:
           node --test tests/ai.test.js
           node --test tests/mobile.test.js
           node --test tests/breaker_qa.test.js
+          node --test tests/entitlements.test.js
+          node --test tests/analytics.test.js
 
   edge-worker-verify:
     name: Cloudflare Worker Build & Dry-Run
