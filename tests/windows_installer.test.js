@@ -63,7 +63,7 @@ describe('OPERON Windows Installer & Portable Package Verification', () => {
   it('Launcher scripts operon.cmd and setup.bat must have correct directives and flags', () => {
     const operonCmdContent = fs.readFileSync(path.join(DIST_DIR, 'operon.cmd'), 'utf-8');
     assert.ok(operonCmdContent.includes('win_tray.ps1'), 'operon.cmd must launch system tray icon');
-    assert.ok(operonCmdContent.includes('node "%~dp0apps\\desktop\\src\\main.js"'), 'operon.cmd must launch desktop server');
+    assert.ok(operonCmdContent.includes('"%~dp0apps\\desktop\\src\\main.js"'), 'operon.cmd must launch desktop server');
 
     const setupBatContent = fs.readFileSync(path.join(DIST_DIR, 'setup.bat'), 'utf-8');
     assert.ok(setupBatContent.includes('Install-Operon.ps1'), 'setup.bat must execute installer script');

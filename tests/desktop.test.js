@@ -120,4 +120,61 @@ describe('OPERON Desktop Server & Workspace API', () => {
     assert.equal(data.compiled.validation.valid, true);
     assert.ok(data.compiled.workflowDraft.steps.length > 0);
   });
+
+  test('GET /api/entitlements and POST /api/trial/start should manage trial lifecycle', async () => {
+    const getRes = await fetch(`${baseUrl}/api/entitlements`);
+    assert.equal(getRes.status, 200);
+    const initialStatus = await getRes.json();
+    assert.ok(initialStatus.tier);
+
+    const trialRes = await fetch(`${baseUrl}/api/trial/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: 14 })
+    });
+    assert.equal(trialRes.status, 200);
+    const trialData = await trialRes.json();
+    assert.equal(trialData.success, true);
+    assert.equal(trialData.tier, 'pro_trial');
+    assert.equal(trialData.daysRemaining, 14);
+
+    const statusRes = await fetch(`${baseUrl}/api/entitlements`);
+    const updatedStatus = await statusRes.json();
+    assert.equal(updatedStatus.tier, 'pro_trial');
+    assert.equal(updatedStatus.isTrial, true);
+  });
+
+  test('POST /api/license/simulate-purchase and POST /api/license/activate should verify HMAC tokens', async () => {
+    const buyRes = await fetch(`${baseUrl}/api/license/simulate-purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'pro_lifetime', email: 'e2e.tester@operon.local' })
+    });
+    assert.equal(buyRes.status, 200);
+    const buyData = await buyRes.json();
+    assert.equal(buyData.success, true);
+    assert.equal(buyData.tier, 'pro_lifetime');
+    assert.ok(buyData.issuedKey.startsWith('OPKEY-'));
+
+    // Test activating the newly generated key
+    const activateRes = await fetch(`${baseUrl}/api/license/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: buyData.issuedKey })
+    });
+    assert.equal(activateRes.status, 200);
+    const activateData = await activateRes.json();
+    assert.equal(activateData.success, true);
+    assert.equal(activateData.tier, 'pro_lifetime');
+
+    // Test rejection of tampered/corrupted key
+    const badRes = await fetch(`${baseUrl}/api/license/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: 'OPKEY-TAMPERED_PAYLOAD.BADSIG' })
+    });
+    assert.equal(badRes.status, 400);
+    const badData = await badRes.json();
+    assert.ok(badData.error);
+  });
 });

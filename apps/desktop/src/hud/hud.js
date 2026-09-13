@@ -3,7 +3,7 @@
  */
 import { coreRecipes, WorkflowEngine, defaultActionRegistry, Capabilities, ExecutionStatus, WorkflowSerializer } from '/packages/core/src/index.js';
 import { AIWorkflowCompiler } from '/ai/src/index.js';
-import { EntitlementManager, EntitlementTier, ProductCapability } from '/packages/entitlements/src/index.js';
+import { EntitlementTier, ProductCapability } from '/packages/entitlements/src/constants.js';
 
 class OperonAppController {
   constructor() {
@@ -17,7 +17,7 @@ class OperonAppController {
     this.activeTheme = 'graphite';
 
     this.compiler = new AIWorkflowCompiler();
-    this.entitlements = new EntitlementManager();
+    this.entitlementStatus = { tier: EntitlementTier.FREE };
     this.registry = defaultActionRegistry;
     this.mockClipboard = 'https://github.com/RovelLabs/agy?utm_source=twitter&utm_medium=social';
 
@@ -270,46 +270,92 @@ class OperonAppController {
   }
 
   async initEntitlements() {
-    await this.entitlements.init();
+    try {
+      const res = await fetch('/api/entitlements');
+      if (res.ok) {
+        this.entitlementStatus = await res.json();
+      }
+    } catch {
+      this.entitlementStatus = { tier: EntitlementTier.FREE };
+    }
     this.updateEntitlementUI();
   }
 
   updateEntitlementUI() {
-    const tier = this.entitlements.getTier();
-    const isPro = this.entitlements.hasCapability(ProductCapability.LOCAL_AI_COMPILER);
+    const tier = (this.entitlementStatus && this.entitlementStatus.tier) ? this.entitlementStatus.tier : EntitlementTier.FREE;
+    const isPro = tier.includes('pro') || tier.includes('enterprise');
 
-    this.proBadge.textContent = tier.toUpperCase();
-    this.settingsCurrentTier.textContent = tier.toUpperCase();
-    this.statusText.textContent = tier.toUpperCase();
+    if (this.proBadge) this.proBadge.textContent = tier.toUpperCase();
+    if (this.settingsCurrentTier) this.settingsCurrentTier.textContent = tier.toUpperCase();
+    if (this.statusText) this.statusText.textContent = tier.toUpperCase();
 
     if (isPro) {
-      this.proBadge.style.color = '#22C55E';
-      this.proBadge.style.borderColor = '#22C55E';
-      this.settingsTrialBanner.textContent = 'PRO STATUS ACTIVE: Unlimited custom workflows, large-scale batch file pipelines, and local AI unlocked.';
+      if (this.proBadge) {
+        this.proBadge.style.color = '#22C55E';
+        this.proBadge.style.borderColor = '#22C55E';
+      }
+      if (this.settingsTrialBanner) {
+        const details = this.entitlementStatus?.isTrial 
+          ? ` (${this.entitlementStatus.trialDaysRemaining} days remaining)`
+          : ' (Permanent Offline License)';
+        this.settingsTrialBanner.textContent = `PRO STATUS ACTIVE: Unlimited custom workflows, large-scale batch file pipelines, and local AI unlocked.${details}`;
+      }
       if (this.startTrialBtn) this.startTrialBtn.style.display = 'none';
       if (this.settingsStartTrialBtn) this.settingsStartTrialBtn.style.display = 'none';
     } else {
-      this.proBadge.style.color = 'var(--op-accent)';
-      this.proBadge.style.borderColor = 'var(--op-accent)';
+      if (this.proBadge) {
+        this.proBadge.style.color = 'var(--op-accent)';
+        this.proBadge.style.borderColor = 'var(--op-accent)';
+      }
+      if (this.settingsTrialBanner) {
+        this.settingsTrialBanner.textContent = 'FREE TIER: 30 Built-in recipes included. Upgrade to PRO for unlimited custom studio pipelines and local AI.';
+      }
+      if (this.startTrialBtn) this.startTrialBtn.style.display = 'inline-block';
+      if (this.settingsStartTrialBtn) this.settingsStartTrialBtn.style.display = 'inline-block';
     }
   }
 
   async handleStartTrial() {
-    const res = await this.entitlements.startTrial();
-    if (res.success) {
-      this.showToast(`14-Day Free Pro Trial Activated! (${res.daysRemaining} days remaining)`);
-      this.updateEntitlementUI();
-      if (this.upgradeModal) this.upgradeModal.style.display = 'none';
+    try {
+      const res = await fetch('/api/trial/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: 14 })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        this.showToast(`14-Day Free Pro Trial Activated! (${data.daysRemaining} days remaining)`);
+        await this.initEntitlements();
+        if (this.upgradeModal) this.upgradeModal.style.display = 'none';
+        return;
+      } else {
+        this.showToast(data.error || 'Trial could not be started.');
+      }
+    } catch (err) {
+      this.showToast(`Error starting trial: ${err.message}`);
     }
   }
 
   async handleSimulatePurchase() {
-    // Generate a cryptographic key for simulation
-    const simulatedKey = `OPKEY-${Date.now()}-SIMULATED_PRO_LIFETIME-ED25519_VALID`;
-    const res = await this.entitlements.activateLicenseKey(simulatedKey);
-    if (res.success) {
-      this.showToast('Purchase Simulated! Pro Lifetime Local Active.');
-      this.updateEntitlementUI();
+    try {
+      const res = await fetch('/api/license/simulate-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: 'pro_lifetime', email: 'sandbox.tester@operon.local' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        this.showToast(`Purchase Simulated! Pro Lifetime Active. Key: ${data.issuedKey ? data.issuedKey.substring(0, 18) + '...' : ''}`);
+        if (this.settingsKeyInput) this.settingsKeyInput.value = data.issuedKey || '';
+        if (this.licenseInput) this.licenseInput.value = data.issuedKey || '';
+        await this.initEntitlements();
+        if (this.upgradeModal) this.upgradeModal.style.display = 'none';
+        return;
+      } else {
+        this.showToast(data.error || 'Simulation failed');
+      }
+    } catch (err) {
+      this.showToast(`Error simulating purchase: ${err.message}`);
     }
   }
 
@@ -318,13 +364,22 @@ class OperonAppController {
       this.showToast('Please enter an offline license key.');
       return;
     }
-    const res = await this.entitlements.activateLicenseKey(key.trim());
-    if (res.success) {
-      this.showToast('License key activated successfully!');
-      this.updateEntitlementUI();
-      if (this.upgradeModal) this.upgradeModal.style.display = 'none';
-    } else {
-      this.showToast(`Activation failed: ${res.reason}`);
+    try {
+      const res = await fetch('/api/license/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licenseKey: key.trim() })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        this.showToast('Cryptographic license key verified and activated successfully!');
+        await this.initEntitlements();
+        if (this.upgradeModal) this.upgradeModal.style.display = 'none';
+      } else {
+        this.showToast(`Activation failed: ${data.error || 'Invalid or tampered key'}`);
+      }
+    } catch (err) {
+      this.showToast(`Error activating key: ${err.message}`);
     }
   }
 

@@ -8,8 +8,9 @@ import fs from 'node:fs/promises';
 export class LocalDataStore extends ILocalDataStore {
   constructor(options = {}) {
     super();
-    this.storagePath = options.storagePath || null;
-    this.isMemoryOnly = !options.storagePath;
+    const opts = typeof options === 'string' ? { storagePath: options } : (options || {});
+    this.storagePath = opts.storagePath || null;
+    this.isMemoryOnly = !this.storagePath;
     this.version = 1;
 
     this.state = {
@@ -55,18 +56,40 @@ export class LocalDataStore extends ILocalDataStore {
   async persist() {
     if (this.isMemoryOnly || !this.storagePath) return;
 
-    const payload = {
-      version: this.state.version,
-      updatedAt: new Date().toISOString(),
-      settings: this.state.settings,
-      workflows: Array.from(this.state.workflows.values()),
-      executionHistory: this.state.executionHistory.slice(-500) // Keep last 500
-    };
+    // Sequential write queue to prevent Windows NTFS EPERM / EBUSY rename race conditions
+    if (this._persistPromise) {
+      this._hasPendingPersist = true;
+      return this._persistPromise;
+    }
 
-    // Atomic write
-    const tempPath = `${this.storagePath}.tmp_${Date.now()}`;
-    await fs.writeFile(tempPath, JSON.stringify(payload, null, 2), 'utf8');
-    await fs.rename(tempPath, this.storagePath);
+    this._persistPromise = (async () => {
+      try {
+        do {
+          this._hasPendingPersist = false;
+          const payload = {
+            version: this.state.version,
+            updatedAt: new Date().toISOString(),
+            settings: this.state.settings,
+            workflows: Array.from(this.state.workflows.values()),
+            executionHistory: this.state.executionHistory.slice(-500) // Keep last 500
+          };
+
+          const tempPath = `${this.storagePath}.tmp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          await fs.writeFile(tempPath, JSON.stringify(payload, null, 2), 'utf8');
+          try {
+            await fs.rename(tempPath, this.storagePath);
+          } catch (renameErr) {
+            // Fallback for Windows file lock
+            await fs.copyFile(tempPath, this.storagePath);
+            await fs.unlink(tempPath).catch(() => {});
+          }
+        } while (this._hasPendingPersist);
+      } finally {
+        this._persistPromise = null;
+      }
+    })();
+
+    return this._persistPromise;
   }
 
   async close() {

@@ -1,23 +1,26 @@
 """
-OPERON Windows Installer & Portable Package Generator
-Builds production-ready Windows deployment package with installer, uninstaller,
-desktop shortcuts, registry registration, and system tray integration.
+OPERON Windows Standalone Application & Installer Packager
+Compiles native Operon.exe Win32 binary, bundles standalone portable Node runtime,
+builds complete offline self-contained installer with tray integration, shortcuts, and uninstaller.
 """
 import os
 import shutil
+import subprocess
 import zipfile
 
 PROJECT_DIR = r"C:\Users\paranoia\Desktop\project abubu"
 OUTPUT_DIR = os.path.join(PROJECT_DIR, "dist", "windows-installer")
 ZIP_DEST = os.path.join(PROJECT_DIR, "OPERON-Windows-Installer-v1.0.0.zip")
+CSC_PATH = r"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+NODE_SYSTEM_PATH = r"C:\Program Files\nodejs\node.exe"
 
 def build_installer():
-    print("[Windows Installer] Preparing installation distribution...")
+    print("[Windows Packager] Preparing self-contained application distribution...")
     if os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # Copy required project directories
+    # 1. Copy required project modules
     dirs_to_copy = [
         ("packages", "packages"),
         ("ai", "ai"),
@@ -28,23 +31,56 @@ def build_installer():
         src_full = os.path.join(PROJECT_DIR, src)
         dest_full = os.path.join(OUTPUT_DIR, dest)
         shutil.copytree(src_full, dest_full)
-        print(f"  + Copied {src} -> {dest}")
+        print(f"  + Synced {src} -> {dest}")
 
-    # Copy root package.json
+    # Copy package.json
     shutil.copyfile(os.path.join(PROJECT_DIR, "package.json"), os.path.join(OUTPUT_DIR, "package.json"))
 
-    # 1. Generate operon.cmd launcher
+    # 2. Bundle portable Node runtime
+    bin_dir = os.path.join(OUTPUT_DIR, "bin")
+    os.makedirs(bin_dir, exist_ok=True)
+    if os.path.exists(NODE_SYSTEM_PATH):
+        dest_node = os.path.join(bin_dir, "node.exe")
+        shutil.copyfile(NODE_SYSTEM_PATH, dest_node)
+        print(f"  + Bundled standalone portable runtime: bin/node.exe ({os.path.getsize(dest_node)} bytes)")
+
+    # 3. Compile Native Win32 Operon.exe using csc.exe
+    native_cs_src = os.path.join(OUTPUT_DIR, "apps", "desktop", "src", "windows", "NativeApp.cs")
+    operon_exe_out = os.path.join(OUTPUT_DIR, "Operon.exe")
+    
+    cmd = [
+        CSC_PATH,
+        "/nologo",
+        "/target:winexe",
+        f"/out:{operon_exe_out}",
+        "/r:System.dll",
+        "/r:System.Windows.Forms.dll",
+        "/r:System.Drawing.dll",
+        native_cs_src
+    ]
+    
+    print("  + Compiling native Win32 binary Operon.exe...")
+    compile_proc = subprocess.run(cmd, capture_output=True, text=True)
+    if compile_proc.returncode != 0:
+        raise RuntimeError(f"C# compilation failed: {compile_proc.stderr}")
+    print(f"  + [OK] Compiled native Operon.exe ({os.path.getsize(operon_exe_out)} bytes)")
+
+    # 4. Generate operon.cmd fallback launcher
     operon_cmd = """@echo off
 setlocal
 cd /d "%~dp0"
-start "" /b powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0apps\\desktop\\src\\windows\\win_tray.ps1"
-start "" node "%~dp0apps\\desktop\\src\\main.js"
+if exist "%~dp0Operon.exe" (
+    start "" "%~dp0Operon.exe"
+) else (
+    start "" /b powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0apps\\desktop\\src\\windows\\win_tray.ps1"
+    start "" "%~dp0bin\\node.exe" "%~dp0apps\\desktop\\src\\main.js"
+)
 """
     with open(os.path.join(OUTPUT_DIR, "operon.cmd"), "w", encoding="utf-8") as f:
         f.write(operon_cmd)
     print("  + Generated operon.cmd launcher")
 
-    # 2. Generate Install-Operon.ps1
+    # 5. Generate Install-Operon.ps1
     install_ps1 = """# OPERON Windows Automated Installer
 param(
     [switch]$Quiet = $false
@@ -55,8 +91,8 @@ $currentDir = $PSScriptRoot
 
 Write-Host "Installing OPERON into $targetDir..." -ForegroundColor Cyan
 
-# Stop existing processes if running
-Get-Process -Name node, powershell -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*Operon*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+# Terminate running instances
+Get-Process -Name Operon, node, powershell -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*Operon*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 
 # Ensure directory exists
 if (-not (Test-Path $targetDir)) {
@@ -69,17 +105,23 @@ Copy-Item -Path "$currentDir\\*" -Destination $targetDir -Recurse -Force
 # Create Desktop Shortcut
 $wsh = New-Object -ComObject WScript.Shell
 $desktopShortcut = $wsh.CreateShortcut("$env:USERPROFILE\\Desktop\\OPERON.lnk")
-$desktopShortcut.TargetPath = "$targetDir\\operon.cmd"
+$desktopShortcut.TargetPath = "$targetDir\\Operon.exe"
 $desktopShortcut.WorkingDirectory = $targetDir
 $desktopShortcut.Description = "OPERON - The Autonomous Personal Operating Layer"
+if (Test-Path "$targetDir\\Operon.exe") {
+    $desktopShortcut.IconLocation = "$targetDir\\Operon.exe,0"
+}
 $desktopShortcut.Save()
 
 # Create Start Menu Shortcut
 $startMenuDir = "$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs"
 $startShortcut = $wsh.CreateShortcut("$startMenuDir\\Operon.lnk")
-$startShortcut.TargetPath = "$targetDir\\operon.cmd"
+$startShortcut.TargetPath = "$targetDir\\Operon.exe"
 $startShortcut.WorkingDirectory = $targetDir
 $startShortcut.Description = "OPERON Automation"
+if (Test-Path "$targetDir\\Operon.exe") {
+    $startShortcut.IconLocation = "$targetDir\\Operon.exe,0"
+}
 $startShortcut.Save()
 
 # Register in Windows Add/Remove Programs (Registry)
@@ -88,9 +130,10 @@ if (-not (Test-Path $regKey)) {
     New-Item -Path $regKey -Force | Out-Null
 }
 Set-ItemProperty -Path $regKey -Name "DisplayName" -Value "OPERON (Autonomous Operating Layer)"
-Set-ItemProperty -Path $regKey -Name "DisplayVersion" -Value "1.0.0-rc.1"
+Set-ItemProperty -Path $regKey -Name "DisplayVersion" -Value "1.0.0-rc.2"
 Set-ItemProperty -Path $regKey -Name "Publisher" -Value "OPERON Systems"
 Set-ItemProperty -Path $regKey -Name "InstallLocation" -Value $targetDir
+Set-ItemProperty -Path $regKey -Name "DisplayIcon" -Value "$targetDir\\Operon.exe,0"
 Set-ItemProperty -Path $regKey -Name "UninstallString" -Value "powershell.exe -ExecutionPolicy Bypass -File `"$targetDir\\Uninstall-Operon.ps1`""
 Set-ItemProperty -Path $regKey -Name "QuietUninstallString" -Value "powershell.exe -ExecutionPolicy Bypass -File `"$targetDir\\Uninstall-Operon.ps1`" -Quiet"
 
@@ -103,7 +146,7 @@ if (-not $Quiet) {
         f.write(install_ps1)
     print("  + Generated Install-Operon.ps1")
 
-    # 3. Generate Uninstall-Operon.ps1
+    # 6. Generate Uninstall-Operon.ps1
     uninstall_ps1 = """# OPERON Windows Automated Uninstaller
 param(
     [switch]$Quiet = $false
@@ -112,7 +155,7 @@ param(
 Write-Host "Uninstalling OPERON..." -ForegroundColor Yellow
 
 # Terminate running instances
-Get-Process -Name node, powershell -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*Operon*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process -Name Operon, node, powershell -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*Operon*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 
 # Remove Desktop & Start Menu shortcuts
 Remove-Item -Path "$env:USERPROFILE\\Desktop\\OPERON.lnk" -Force -ErrorAction SilentlyContinue
@@ -136,24 +179,29 @@ Write-Host "[OK] OPERON Uninstalled successfully." -ForegroundColor Green
         f.write(uninstall_ps1)
     print("  + Generated Uninstall-Operon.ps1")
 
-    # 4. Generate setup.bat wrapper for 1-click execution
+    # 7. Generate setup.bat wrapper for 1-click execution
     setup_bat = """@echo off
 cd /d "%~dp0"
 echo ===================================================
 echo   Installing OPERON (Autonomous Personal OS Layer)
 echo ===================================================
 powershell -ExecutionPolicy Bypass -NoProfile -File "%~dp0Install-Operon.ps1"
+if %errorlevel% equ 0 (
+    echo.
+    echo Launching OPERON...
+    start "" "%LOCALAPPDATA%\\Operon\\Operon.exe"
+)
 pause
 """
     with open(os.path.join(OUTPUT_DIR, "setup.bat"), "w", encoding="utf-8") as f:
         f.write(setup_bat)
     print("  + Generated setup.bat")
 
-    # 5. Compress into release archive
+    # 8. Compress into release archive
     if os.path.exists(ZIP_DEST):
         os.remove(ZIP_DEST)
 
-    print(f"[Windows Installer] Zipping package to {ZIP_DEST}...")
+    print(f"[Windows Packager] Zipping release archive to {ZIP_DEST}...")
     with zipfile.ZipFile(ZIP_DEST, 'w', zipfile.ZIP_DEFLATED) as zf:
         for root, _, files in os.walk(OUTPUT_DIR):
             for file in files:
@@ -162,7 +210,7 @@ pause
                 zf.write(abs_path, rel_path)
 
     zip_size = os.path.getsize(ZIP_DEST)
-    print(f"[Windows Installer] [OK] Successfully generated {ZIP_DEST} ({zip_size} bytes)")
+    print(f"[Windows Packager] [OK] Successfully generated {ZIP_DEST} ({zip_size:,} bytes / {zip_size / (1024*1024):.2f} MB)")
 
 if __name__ == "__main__":
     build_installer()

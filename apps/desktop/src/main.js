@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { LocalDataStore } from '../../../packages/storage/src/index.js';
 import { coreRecipes, defaultActionRegistry, WorkflowEngine, Capabilities } from '../../../packages/core/src/index.js';
 import { AIWorkflowCompiler } from '../../../ai/src/index.js';
+import { EntitlementManager, EntitlementTier, LicenseVerifier } from '../../../packages/entitlements/src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,21 +27,23 @@ function parseJsonBody(req) {
 
 export class OperonDesktopApp {
   constructor(options = {}) {
-    this.port = options.port || 49210;
+    this.port = options.port !== undefined ? options.port : 49210;
     this.store = new LocalDataStore({
-      storagePath: path.join(process.cwd(), '.operon', 'operon_desktop.json')
+      storagePath: options.storagePath || options.dbPath || path.join(process.cwd(), '.operon', 'operon_desktop.json')
     });
     this.compiler = new AIWorkflowCompiler();
     this.engine = new WorkflowEngine({
       platform: process.platform === 'win32' ? 'windows' : (process.platform === 'darwin' ? 'macos' : 'linux'),
       grantedCapabilities: Object.values(Capabilities)
     });
+    this.entitlements = new EntitlementManager({ store: this.store });
     this.server = null;
   }
 
   async start() {
     console.log('[OPERON Desktop] Initializing local database and storage...');
     await this.store.init();
+    await this.entitlements.init();
 
     // Seed core recipes (ensuring all 30 are available)
     const existing = await this.store.getWorkflows();
@@ -166,6 +169,71 @@ export class OperonDesktopApp {
         return;
       }
 
+      // API: Entitlements status
+      if (url.pathname === '/api/entitlements' && req.method === 'GET') {
+        const status = this.entitlements.getStatus();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(status));
+        return;
+      }
+
+      // API: Start 14-day zero-card Pro trial
+      if (url.pathname === '/api/trial/start' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const days = body.days || 14;
+          const result = await this.entitlements.startTrial(days);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: Activate offline cryptographic license key
+      if (url.pathname === '/api/license/activate' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          if (!body.licenseKey || typeof body.licenseKey !== 'string') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Valid licenseKey string required' }));
+            return;
+          }
+          const result = await this.entitlements.activateLicense(body.licenseKey.trim());
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: Simulate sandbox purchase (issues and activates valid cryptographic license)
+      if (url.pathname === '/api/license/simulate-purchase' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const tier = body.tier || EntitlementTier.PRO_LIFETIME;
+          const email = body.email || 'sandbox.tester@operon.local';
+          const key = LicenseVerifier.issueLicense({
+            tier,
+            customerEmail: email
+          });
+          const result = await this.entitlements.activateLicense(key);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ...result,
+            issuedKey: key
+          }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
       // API: List all registered actions with schemas
       if (url.pathname === '/api/actions' && req.method === 'GET') {
         const actions = defaultActionRegistry.list().map(a => ({
@@ -186,13 +254,21 @@ export class OperonDesktopApp {
       if (url.pathname === '/api/execute' && req.method === 'POST') {
         try {
           const body = await parseJsonBody(req);
-          const { workflow, input = {}, options = {} } = body;
+          let { workflow, workflowId, input = {}, options = {} } = body;
+          if (!workflow && workflowId) {
+            const allWfs = await this.store.getWorkflows();
+            workflow = allWfs.find(w => w.id === workflowId) || coreRecipes.find(r => r.id === workflowId);
+          }
           if (!workflow || !workflow.steps) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Valid workflow with steps required' }));
             return;
           }
           const executionResult = await this.engine.execute(workflow, input, options);
+          const finalOutput = executionResult.stepResults && executionResult.stepResults.length > 0
+            ? executionResult.stepResults[executionResult.stepResults.length - 1].output
+            : {};
+
           // Auto log to history
           await this.store.logExecution({
             workflowId: workflow.id,
@@ -204,7 +280,11 @@ export class OperonDesktopApp {
             timestamp: new Date().toISOString()
           });
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ result: executionResult }));
+          res.end(JSON.stringify({
+            result: executionResult,
+            status: executionResult.status,
+            output: finalOutput
+          }));
         } catch (err) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: err.message }));
@@ -254,6 +334,10 @@ export class OperonDesktopApp {
 
     return new Promise((resolve) => {
       this.server.listen(this.port, () => {
+        const addr = this.server.address();
+        if (addr && typeof addr === 'object' && addr.port) {
+          this.port = addr.port;
+        }
         console.log(`[OPERON Desktop] Quick Command HUD available at: http://localhost:${this.port}`);
         resolve(`http://localhost:${this.port}`);
       });
@@ -270,10 +354,11 @@ export class OperonDesktopApp {
 }
 
 // Standalone execution
-if (process.argv[1] === __filename) {
-  const app = new OperonDesktopApp();
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  const app = new OperonDesktopApp({ port: process.env.PORT ? Number(process.env.PORT) : 49215 });
   app.start().catch(err => {
     console.error('[OPERON Desktop] Fatal start error:', err);
     process.exit(1);
   });
 }
+

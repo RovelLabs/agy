@@ -141,9 +141,13 @@ export const fileActions = [
       },
       required: ['directory']
     },
-    async execute({ directory, strategy = 'category', dryRun = false }) {
-      if (!directory) throw new Error('Directory path is required');
-      const resolvedDir = path.resolve(directory);
+    async execute(params = {}) {
+      const targetDir = params.directory || params.directoryPath;
+      const strategy = params.mode || params.strategy || 'category';
+      const dryRun = Boolean(params.dryRun);
+
+      if (!targetDir) throw new Error('Directory path is required');
+      const resolvedDir = path.resolve(targetDir);
 
       let entries;
       try {
@@ -154,7 +158,7 @@ export const fileActions = [
 
       const files = entries.filter(e => e.isFile()).map(e => e.name);
       if (files.length === 0) {
-        return { totalMoved: 0, movedFiles: [], dryRun };
+        return { totalMoved: 0, movedCount: 0, movedFiles: [], organizedDirectory: resolvedDir, dryRun };
       }
 
       const categoryMap = {
@@ -209,7 +213,9 @@ export const fileActions = [
 
       return {
         totalMoved: movedFiles.length,
+        movedCount: movedFiles.length,
         strategy,
+        organizedDirectory: resolvedDir,
         movedFiles,
         dryRun
       };
@@ -293,10 +299,46 @@ export const fileActions = [
       },
       required: ['files', 'outputPath']
     },
-    async execute({ files, outputPath }) {
-      if (!Array.isArray(files) || files.length === 0) {
-        throw new Error('At least one file is required for ZIP creation');
+    async execute(params = {}) {
+      const inputItems = params.files || params.sourcePaths || [];
+      const outputPath = params.outputPath || params.destination;
+
+      if (!outputPath) throw new Error('outputPath is required for ZIP creation');
+      if (!Array.isArray(inputItems) || inputItems.length === 0) {
+        throw new Error('At least one file or folder is required for ZIP creation');
       }
+
+      // Recursively collect all files if directories are passed
+      const files = [];
+      for (const item of inputItems) {
+        const resolved = path.resolve(item);
+        try {
+          const stat = await fs.stat(resolved);
+          if (stat.isDirectory()) {
+            async function collectDir(dir) {
+              const entries = await fs.readdir(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  await collectDir(fullPath);
+                } else if (entry.isFile()) {
+                  files.push(fullPath);
+                }
+              }
+            }
+            await collectDir(resolved);
+          } else if (stat.isFile()) {
+            files.push(resolved);
+          }
+        } catch {
+          // Skip inaccessible item
+        }
+      }
+
+      if (files.length === 0) {
+        throw new Error('No files found to compress into ZIP archive');
+      }
+
       const resolvedOutput = path.resolve(outputPath);
       const zlib = await import('node:zlib');
 

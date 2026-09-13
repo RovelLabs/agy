@@ -2,13 +2,13 @@
  * OPERON Deterministic Workflow Execution Engine
  */
 import { defaultActionRegistry } from './registry.js';
-import { ExecutionStatus } from './types.js';
+import { ExecutionStatus, Capabilities } from './types.js';
 
 export class WorkflowEngine {
   constructor(options = {}) {
     this.registry = options.registry || defaultActionRegistry;
     this.platform = options.platform || 'windows';
-    this.grantedCapabilities = new Set(options.grantedCapabilities || Object.values(options.capabilities || {}));
+    this.grantedCapabilities = new Set(options.grantedCapabilities || Object.values(Capabilities));
     this.context = options.context || {};
   }
 
