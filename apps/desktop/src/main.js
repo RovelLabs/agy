@@ -1,21 +1,39 @@
-/**
- * OPERON Desktop Application Host Runtime
- */
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LocalDataStore } from '../../../packages/storage/src/index.js';
-import { coreRecipes } from '../../../packages/core/src/index.js';
+import { coreRecipes, defaultActionRegistry, WorkflowEngine, Capabilities } from '../../../packages/core/src/index.js';
+import { AIWorkflowCompiler } from '../../../ai/src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function parseJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
 export class OperonDesktopApp {
   constructor(options = {}) {
     this.port = options.port || 49210;
     this.store = new LocalDataStore({
       storagePath: path.join(process.cwd(), '.operon', 'operon_desktop.json')
+    });
+    this.compiler = new AIWorkflowCompiler();
+    this.engine = new WorkflowEngine({
+      platform: process.platform === 'win32' ? 'windows' : (process.platform === 'darwin' ? 'macos' : 'linux'),
+      grantedCapabilities: Object.values(Capabilities)
     });
     this.server = null;
   }
@@ -24,11 +42,11 @@ export class OperonDesktopApp {
     console.log('[OPERON Desktop] Initializing local database and storage...');
     await this.store.init();
 
-    // Seed core recipes
+    // Seed core recipes (ensuring all 30 are available)
     const existing = await this.store.getWorkflows();
-    if (existing.length === 0) {
-      console.log('[OPERON Desktop] Seeding 15 curated core recipes...');
-      for (const r of coreRecipes) {
+    const existingIds = new Set(existing.map(w => w.id));
+    for (const r of coreRecipes) {
+      if (!existingIds.has(r.id)) {
         await this.store.saveWorkflow(r);
       }
     }
@@ -37,22 +55,179 @@ export class OperonDesktopApp {
     this.server = http.createServer(async (req, res) => {
       const url = new URL(req.url, `http://localhost:${this.port}`);
       
-      // API Routes
-      if (url.pathname === '/api/workflows') {
+      // CORS headers for local host
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+
+      // API: List workflows
+      if (url.pathname === '/api/workflows' && req.method === 'GET') {
         const workflows = await this.store.getWorkflows();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ workflows }));
         return;
       }
 
-      if (url.pathname === '/api/settings') {
+      // API: Save / update workflow
+      if (url.pathname === '/api/workflows' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          if (!body.id || typeof body.id !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(body.id)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Valid alphanumeric workflow id required (max 64 chars, no path traversal)' }));
+            return;
+          }
+          if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0 || body.name.length > 128) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Valid workflow name required (1-128 chars)' }));
+            return;
+          }
+          if (body.steps && !Array.isArray(body.steps)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Workflow steps must be an array' }));
+            return;
+          }
+          await this.store.saveWorkflow(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, workflow: body }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: Delete workflow
+      if (url.pathname === '/api/workflows' && req.method === 'DELETE') {
+        try {
+          const id = url.searchParams.get('id');
+          if (!id || !/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Valid alphanumeric workflow id required' }));
+            return;
+          }
+          await this.store.deleteWorkflow(id);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, deletedId: id }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: Execution history
+      if (url.pathname === '/api/history' && req.method === 'GET') {
+        const limit = Number(url.searchParams.get('limit')) || 50;
+        const history = await this.store.getExecutionHistory(limit);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ history }));
+        return;
+      }
+
+      // API: Record execution history
+      if (url.pathname === '/api/history' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          await this.store.logExecution(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: Settings
+      if (url.pathname === '/api/settings' && req.method === 'GET') {
         const settings = await this.store.getSettings();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ settings }));
         return;
       }
 
-      // Static file serving for HUD
+      if (url.pathname === '/api/settings' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          await this.store.updateSettings(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: List all registered actions with schemas
+      if (url.pathname === '/api/actions' && req.method === 'GET') {
+        const actions = defaultActionRegistry.list().map(a => ({
+          id: a.id,
+          name: a.name,
+          description: a.description,
+          category: a.category,
+          requiredCapabilities: a.requiredCapabilities,
+          supportedPlatforms: a.supportedPlatforms,
+          schema: a.schema
+        }));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ actions }));
+        return;
+      }
+
+      // API: Execute workflow live
+      if (url.pathname === '/api/execute' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const { workflow, input = {}, options = {} } = body;
+          if (!workflow || !workflow.steps) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Valid workflow with steps required' }));
+            return;
+          }
+          const executionResult = await this.engine.execute(workflow, input, options);
+          // Auto log to history
+          await this.store.logExecution({
+            workflowId: workflow.id,
+            workflowName: workflow.name,
+            status: executionResult.status,
+            durationMs: executionResult.durationMs,
+            stepCount: (workflow.steps || []).length,
+            error: executionResult.error || null,
+            timestamp: new Date().toISOString()
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ result: executionResult }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // API: Compile Natural Language Intent to Workflow
+      if (url.pathname === '/api/compile-ai' && req.method === 'POST') {
+        try {
+          const body = await parseJsonBody(req);
+          const prompt = body.prompt || '';
+          const compiled = await this.compiler.compile(prompt);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ compiled }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+      }
+
+      // Static file serving for HUD & Studio
       let filePath = path.join(__dirname, 'hud', url.pathname === '/' ? 'index.html' : url.pathname.slice(1));
       
       // Handle imports targeting packages

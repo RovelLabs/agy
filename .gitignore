@@ -52,3 +52,9 @@ models/*.onnx
 models/*.bin
 !models/schemas/
 !models/README.md
+
+# Local runtime data & scratch
+.operon/
+scratch/
+apps/macos/Operon.app/Contents/Resources/
+

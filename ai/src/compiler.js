@@ -3,6 +3,8 @@
  * Compiles natural language prompts into typed, schema-validated IWorkflow objects
  */
 import { AIPlanValidator } from './validator.js';
+import { IntentTaxonomy } from './taxonomy.js';
+import { coreRecipes } from '../../packages/core/src/recipes.js';
 import { Categories, Capabilities, Platforms } from '../../packages/core/src/types.js';
 
 export class AIWorkflowCompiler {
@@ -39,122 +41,46 @@ export class AIWorkflowCompiler {
   compileDeterministicRule(lower, rawPrompt, context) {
     const id = `wf_ai_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-    // Rule 1: Clean URL tracking parameters
-    if (
-      lower.includes('clean url') || lower.includes('strip tracking') || 
-      lower.includes('очистить ссылку') || lower.includes('убрать utm') || lower.includes('remove utm')
-    ) {
-      return {
-        id,
-        version: 1,
-        name: 'Clean Tracking URLs',
-        description: `Automated rule generated from: "${rawPrompt}"`,
-        icon: 'Link2Off',
-        category: Categories.TEXT,
-        platforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
-        permissions: [Capabilities.CLIPBOARD_READ, Capabilities.CLIPBOARD_WRITE],
-        trigger: { type: 'manual' },
-        steps: [
-          { id: 'step_read', actionId: 'clipboard.read', parameters: {} },
-          { id: 'step_clean', actionId: 'text.clean_url', parameters: { text: '${steps.step_read.text}' } },
-          { id: 'step_write', actionId: 'clipboard.write', parameters: { text: '${steps.step_clean.cleanedText}' } }
-        ]
-      };
-    }
+    // Score all taxonomy intents by keyword matches
+    let bestIntent = null;
+    let highestScore = 0;
 
-    // Rule 2: JSON formatting / validation
-    if (
-      lower.includes('format json') || lower.includes('beautify json') || 
-      lower.includes('форматировать json') || lower.includes('валидация json') || lower.includes('indent json')
-    ) {
-      return {
-        id,
-        version: 1,
-        name: 'Format & Indent JSON',
-        description: `Automated rule generated from: "${rawPrompt}"`,
-        icon: 'FileJson',
-        category: Categories.DEVELOPER,
-        platforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
-        permissions: [Capabilities.CLIPBOARD_READ, Capabilities.CLIPBOARD_WRITE],
-        trigger: { type: 'manual' },
-        steps: [
-          { id: 'step_read', actionId: 'clipboard.read', parameters: {} },
-          { id: 'step_format', actionId: 'text.format_json', parameters: { text: '${steps.step_read.text}', indent: 2 } },
-          { id: 'step_write', actionId: 'clipboard.write', parameters: { text: '${steps.step_format.formattedText}' } }
-        ]
-      };
-    }
-
-    // Rule 3: Image compression / WebP conversion
-    if (
-      lower.includes('convert to webp') || lower.includes('compress image') || 
-      lower.includes('конвертировать в webp') || lower.includes('сжать картинки') || lower.includes('webp')
-    ) {
-      return {
-        id,
-        version: 1,
-        name: 'Compress Images to WebP',
-        description: `Automated rule generated from: "${rawPrompt}"`,
-        icon: 'ImageDown',
-        category: Categories.IMAGE,
-        platforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
-        permissions: [Capabilities.FILESYSTEM_READ, Capabilities.FILESYSTEM_WRITE],
-        trigger: { type: 'file_drop' },
-        steps: [
-          {
-            id: 'step_convert',
-            actionId: 'image.convert_format',
-            parameters: { filePaths: '${input.files}', targetFormat: 'webp', quality: 85 }
+    for (const intent of Object.values(IntentTaxonomy)) {
+      let score = 0;
+      for (const kw of intent.keywords) {
+        if (lower.includes(kw)) {
+          // Exact substring match
+          score += kw.length * 3;
+        } else {
+          // Token subset match for natural phrasing with intermediate words
+          const words = kw.split(' ');
+          if (words.length > 1 && words.every(w => lower.includes(w))) {
+            score += kw.length * 1.5;
           }
-        ]
-      };
+        }
+      }
+      if (score > highestScore) {
+        highestScore = score;
+        bestIntent = intent;
+      }
     }
 
-    // Rule 4: Batch rename files with date/sequence
-    if (
-      lower.includes('rename file') || lower.includes('batch rename') || 
-      lower.includes('переименовать файлы') || lower.includes('rename screenshots')
-    ) {
-      return {
-        id,
-        version: 1,
-        name: 'Batch Rename with Date & Counter',
-        description: `Automated rule generated from: "${rawPrompt}"`,
-        icon: 'FileCode',
-        category: Categories.FILE,
-        platforms: [Platforms.WINDOWS, Platforms.MACOS],
-        permissions: [Capabilities.FILESYSTEM_READ, Capabilities.FILESYSTEM_WRITE],
-        trigger: { type: 'file_drop' },
-        steps: [
-          {
-            id: 'step_rename',
-            actionId: 'file.batch_rename',
-            parameters: { files: '${input.files}', pattern: '{date}_{counter}_{name}.{ext}', startIndex: 1 }
-          }
-        ]
-      };
-    }
-
-    // Rule 5: Summarize text locally
-    if (
-      lower.includes('summarize') || lower.includes('summary') || 
-      lower.includes('резюмировать') || lower.includes('краткое содержание')
-    ) {
-      return {
-        id,
-        version: 1,
-        name: 'Local Text Summary',
-        description: `Automated rule generated from: "${rawPrompt}"`,
-        icon: 'AlignLeft',
-        category: Categories.TEXT,
-        platforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
-        permissions: [Capabilities.CLIPBOARD_READ],
-        trigger: { type: 'manual' },
-        steps: [
-          { id: 'step_read', actionId: 'clipboard.read', parameters: {} },
-          { id: 'step_sum', actionId: 'text.summarize_local', parameters: { text: '${steps.step_read.text}', maxSentences: 3 } }
-        ]
-      };
+    if (bestIntent && highestScore > 0) {
+      const template = coreRecipes.find(r => r.id === bestIntent.targetRecipe);
+      if (template) {
+        return {
+          id,
+          version: 1,
+          name: template.name,
+          description: `Automated rule generated from: "${rawPrompt}"`,
+          icon: template.icon,
+          category: template.category,
+          platforms: template.platforms || [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
+          permissions: template.permissions || [],
+          trigger: template.trigger || { type: 'manual' },
+          steps: JSON.parse(JSON.stringify(template.steps))
+        };
+      }
     }
 
     // Default fallback: Custom Text Transformation Pipeline

@@ -3,88 +3,364 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OPERON HUD</title>
+  <title>OPERON — Autonomous Operating Layer</title>
   <link rel="stylesheet" href="hud.css">
 </head>
 <body>
-  <div class="op-overlay" id="hudOverlay">
-    <!-- Top Search Header -->
-    <header class="op-search-header">
-      <div class="op-brand-glyph">
+  <div class="op-app-container">
+    <!-- Top Global App Navigation Bar -->
+    <nav class="op-nav-bar">
+      <div class="op-nav-brand">
         <svg viewBox="0 0 32 32" class="op-logo-svg">
           <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5" fill="#121518" stroke="#38BDF8" stroke-width="2.5"/>
           <circle cx="16" cy="16" r="3.5" fill="#38BDF8"/>
         </svg>
+        <span class="op-brand-title">OPERON</span>
       </div>
-      <input 
-        type="text" 
-        id="opSearchInput" 
-        class="op-search-input" 
-        placeholder="Type a command, recipe, or describe a routine..." 
-        autocomplete="off" 
-        spellcheck="false"
-        autofocus
-      />
-      <div class="op-header-badges">
-        <span class="op-badge-pro" id="opProBadge" title="Click to view license & upgrade options">FREE</span>
-        <span class="op-badge-kbd">ESC</span>
-      </div>
-    </header>
 
-    <!-- Filter Categories -->
-    <nav class="op-filter-bar">
-      <button class="op-filter-chip active" data-category="all">All</button>
-      <button class="op-filter-chip" data-category="text">Text</button>
-      <button class="op-filter-chip" data-category="clipboard">Clipboard</button>
-      <button class="op-filter-chip" data-category="image">Image</button>
-      <button class="op-filter-chip" data-category="file">File</button>
-      <button class="op-filter-chip" data-category="developer">Developer</button>
-      <button class="op-filter-chip" data-category="system">System</button>
-      <div class="op-filter-spacer"></div>
-      <button class="op-theme-toggle" id="themeToggleBtn" title="Switch Theme">◐</button>
+      <div class="op-nav-tabs">
+        <button class="op-nav-tab active" data-view="hud">⚡ Quick HUD</button>
+        <button class="op-nav-tab" data-view="studio">🛠️ Workflow Studio</button>
+        <button class="op-nav-tab" data-view="library">📚 Recipe Library (<span id="opNavRecipeCount">30</span>)</button>
+        <button class="op-nav-tab" data-view="history">📜 History</button>
+        <button class="op-nav-tab" data-view="settings">⚙️ Settings</button>
+        <button class="op-nav-tab" data-view="onboarding">ℹ️ Tour</button>
+      </div>
+
+      <div class="op-nav-controls">
+        <span class="op-badge-pro" id="opProBadge" title="Click to view license & upgrade options">FREE</span>
+        <button class="op-theme-toggle" id="themeToggleBtn" title="Cycle Themes (Graphite, Midnight, OLED, Lunar)">◐</button>
+      </div>
     </nav>
 
-    <!-- Results List & Content Pane -->
-    <main class="op-results-pane">
-      <div class="op-results-list" id="opResultsList" role="listbox">
-        <!-- Injected dynamically -->
+    <!-- VIEW 1: QUICK COMMAND HUD (Alt+Space) -->
+    <main class="op-view active" id="viewHud">
+      <div class="op-hud-box">
+        <header class="op-search-header">
+          <input 
+            type="text" 
+            id="opSearchInput" 
+            class="op-search-input" 
+            placeholder="Type a command, recipe, or describe a routine..." 
+            autocomplete="off" 
+            spellcheck="false"
+            autofocus
+          />
+          <div class="op-header-badges">
+            <span class="op-badge-kbd">ESC to clear</span>
+          </div>
+        </header>
+
+        <nav class="op-filter-bar">
+          <button class="op-filter-chip active" data-category="all">All</button>
+          <button class="op-filter-chip" data-category="text">Text</button>
+          <button class="op-filter-chip" data-category="clipboard">Clipboard</button>
+          <button class="op-filter-chip" data-category="image">Image</button>
+          <button class="op-filter-chip" data-category="file">File</button>
+          <button class="op-filter-chip" data-category="developer">Developer</button>
+          <button class="op-filter-chip" data-category="system">System</button>
+        </nav>
+
+        <section class="op-results-pane">
+          <div class="op-results-list" id="opResultsList" role="listbox">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- AI Intent Bar -->
+        <section class="op-ai-strip" id="opAiStrip" style="display: none;">
+          <div class="op-ai-icon">✨</div>
+          <div class="op-ai-body">
+            <div class="op-ai-title">Local AI Intent Compiler</div>
+            <div class="op-ai-desc" id="opAiDesc">Press Enter to compile intent into a verified routine.</div>
+          </div>
+          <button class="op-btn-primary" id="opAiCompileBtn">Compile</button>
+        </section>
+
+        <footer class="op-footer">
+          <div class="op-footer-keys">
+            <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+            <span><kbd>↵</kbd> Execute</span>
+            <span><kbd>Tab</kbd> Preview</span>
+          </div>
+          <div class="op-footer-info">
+            <span id="opPerfMetrics">Ready • Sub-1ms DAG Engine</span>
+            <span class="op-brand-label">OPERON 1.0</span>
+          </div>
+        </footer>
       </div>
     </main>
 
-    <!-- AI Natural Language Compiler Preview Bar -->
-    <section class="op-ai-strip" id="opAiStrip" style="display: none;">
-      <div class="op-ai-icon">✨</div>
-      <div class="op-ai-body">
-        <div class="op-ai-title">Local AI Compiler Ready</div>
-        <div class="op-ai-desc" id="opAiDesc">Press Enter to compile intent into a validated, offline automation.</div>
-      </div>
-      <button class="op-btn-primary" id="opAiCompileBtn">Compile</button>
-    </section>
+    <!-- VIEW 2: WORKFLOW STUDIO / VISUAL BUILDER -->
+    <main class="op-view" id="viewStudio">
+      <div class="op-studio-layout">
+        <!-- Studio Header Controls -->
+        <div class="op-studio-toolbar">
+          <div class="op-studio-meta">
+            <input type="text" id="studioWfName" class="op-input-title" placeholder="Workflow Name (e.g. Clean Downloads & Archive)" value="Custom Daily Automation" />
+            <input type="text" id="studioWfDesc" class="op-input-sub" placeholder="Brief description of routine..." value="Cleans, formats, and executes multi-step workflow." />
+          </div>
+          <div class="op-studio-actions">
+            <button class="op-btn-secondary" id="studioImportBtn">📥 Import JSON</button>
+            <button class="op-btn-secondary" id="studioExportBtn">📤 Export JSON</button>
+            <button class="op-btn-secondary" id="studioTestRunBtn">▶ Test Run</button>
+            <button class="op-btn-primary" id="studioSaveBtn">💾 Save Workflow</button>
+          </div>
+        </div>
 
-    <!-- Status Footer -->
-    <footer class="op-footer">
-      <div class="op-footer-keys">
-        <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
-        <span><kbd>↵</kbd> Execute</span>
-        <span><kbd>Tab</kbd> Preview</span>
+        <!-- AI Intent Prompt Box in Studio -->
+        <div class="op-ai-prompt-box">
+          <div class="op-ai-prompt-header">
+            <span>✨ AI Prompt to Workflow (Offline Local Compiler)</span>
+            <span style="font-size: 11px; color: var(--op-text-tertiary);">Russian & English supported</span>
+          </div>
+          <div class="op-ai-prompt-row">
+            <input type="text" id="studioAiInput" placeholder="e.g. 'Every time I copy text, strip tracking parameters and format as JSON' or 'Очисти ссылки в буфере и скопируй обратно'" />
+            <button class="op-btn-primary" id="studioAiGenerateBtn">Generate Blocks</button>
+          </div>
+        </div>
+
+        <!-- Studio Builder Pipeline -->
+        <div class="op-studio-pipeline">
+          <!-- BLOCK 1: TRIGGER -->
+          <div class="op-card-block">
+            <div class="op-block-header">
+              <span class="op-block-badge when">WHEN</span>
+              <span class="op-block-title">Trigger Event</span>
+            </div>
+            <div class="op-block-body">
+              <label class="op-form-label">Trigger Mode</label>
+              <select id="studioTriggerSelect" class="op-select">
+                <option value="manual">Manual Execution (HUD / Button)</option>
+                <option value="hotkey">Global Hotkey (e.g. Ctrl+Alt+O)</option>
+                <option value="file_drop">File Drop Target (Filesystem)</option>
+                <option value="clipboard_change">Clipboard Content Change</option>
+                <option value="schedule">Scheduled Interval (Timer)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- BLOCK 2: CONDITION (CHECK) -->
+          <div class="op-card-block">
+            <div class="op-block-header">
+              <span class="op-block-badge check">CHECK</span>
+              <span class="op-block-title">Optional Condition Gate</span>
+              <div style="margin-left: auto;">
+                <label style="font-size: 11px; cursor: pointer;">
+                  <input type="checkbox" id="studioConditionEnabled" /> Enable Gate
+                </label>
+              </div>
+            </div>
+            <div class="op-block-body" id="studioConditionBody" style="display: none;">
+              <div class="op-condition-row">
+                <input type="text" id="studioCondLeft" class="op-input" placeholder="${input.text}" value="${input.text}" />
+                <select id="studioCondOp" class="op-select" style="width: 140px;">
+                  <option value="is_not_empty">is not empty</option>
+                  <option value="is_empty">is empty</option>
+                  <option value="contains">contains</option>
+                  <option value="equals">equals</option>
+                  <option value="matches_regex">matches regex</option>
+                </select>
+                <input type="text" id="studioCondRight" class="op-input" placeholder="target value" value="" />
+              </div>
+            </div>
+          </div>
+
+          <!-- BLOCK 3: ACTION STEPS (DO) -->
+          <div class="op-card-block">
+            <div class="op-block-header">
+              <span class="op-block-badge do">DO</span>
+              <span class="op-block-title">Execution Steps Pipeline</span>
+              <button class="op-btn-secondary op-btn-xs" id="studioAddStepBtn" style="margin-left: auto;">+ Add Step</button>
+            </div>
+            <div class="op-block-body">
+              <div class="op-steps-list" id="studioStepsContainer">
+                <!-- Dynamically injected step cards -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Studio Execution Console -->
+          <div class="op-card-block" id="studioConsoleCard" style="display: none;">
+            <div class="op-block-header">
+              <span class="op-block-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">OUTPUT</span>
+              <span class="op-block-title">Execution Console Output</span>
+              <span id="studioConsoleStatus" style="margin-left: auto; font-family: var(--op-font-mono); font-size: 11px;"></span>
+            </div>
+            <div class="op-block-body">
+              <pre class="op-console-pre" id="studioConsoleOutput"></pre>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="op-footer-info">
-        <span id="opPerfMetrics">Ready • Sub-1ms DAG</span>
-        <span class="op-brand-label">OPERON 1.0</span>
+    </main>
+
+    <!-- VIEW 3: RECIPE LIBRARY -->
+    <main class="op-view" id="viewLibrary">
+      <div class="op-library-layout">
+        <div class="op-library-header">
+          <div>
+            <h2 style="margin: 0 0 4px 0; font-size: 18px; color: var(--op-text-primary);">Curated Automation Library</h2>
+            <p style="margin: 0; font-size: 12px; color: var(--op-text-secondary);">30 production recipes running 100% locally with zero cloud dependencies.</p>
+          </div>
+          <div class="op-library-search">
+            <input type="text" id="librarySearchInput" class="op-input" placeholder="Filter recipes by name or tag..." />
+          </div>
+        </div>
+
+        <div class="op-filter-bar" style="border-radius: 8px; margin-bottom: 16px;">
+          <button class="op-filter-chip active" data-lib-cat="all">All (30)</button>
+          <button class="op-filter-chip" data-lib-cat="text">Text</button>
+          <button class="op-filter-chip" data-lib-cat="file">File</button>
+          <button class="op-filter-chip" data-lib-cat="image">Image</button>
+          <button class="op-filter-chip" data-lib-cat="developer">Developer</button>
+          <button class="op-filter-chip" data-lib-cat="system">System</button>
+        </div>
+
+        <div class="op-recipe-grid" id="libraryGrid">
+          <!-- Injected dynamically -->
+        </div>
       </div>
-    </footer>
+    </main>
+
+    <!-- VIEW 4: EXECUTION HISTORY & AUDIT -->
+    <main class="op-view" id="viewHistory">
+      <div class="op-history-layout">
+        <div class="op-library-header">
+          <div>
+            <h2 style="margin: 0 0 4px 0; font-size: 18px; color: var(--op-text-primary);">Local Execution Audit Log</h2>
+            <p style="margin: 0; font-size: 12px; color: var(--op-text-secondary);">Chronological records stored locally. No cloud sync, zero telemetry leakage.</p>
+          </div>
+          <button class="op-btn-secondary" id="historyClearBtn">🗑️ Clear Audit Log</button>
+        </div>
+
+        <div class="op-history-table-wrapper">
+          <table class="op-history-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Workflow</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Steps</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- VIEW 5: SETTINGS & LICENSING -->
+    <main class="op-view" id="viewSettings">
+      <div class="op-settings-layout">
+        <h2 style="margin: 0 0 16px 0; font-size: 18px; color: var(--op-text-primary);">Application Settings & Entitlements</h2>
+
+        <div class="op-settings-card">
+          <h3 class="op-settings-title">Visual Identity & Theme</h3>
+          <p class="op-settings-desc">Choose from 4 high-contrast, OLED-friendly dark themes designed for deep work.</p>
+          <div class="op-theme-picker">
+            <button class="op-theme-card active" data-theme-name="graphite">
+              <div class="op-theme-swatch" style="background: #121518; border-color: #38BDF8;"></div>
+              <span>Graphite (Default)</span>
+            </button>
+            <button class="op-theme-card" data-theme-name="midnight">
+              <div class="op-theme-swatch" style="background: #0B0E14; border-color: #818CF8;"></div>
+              <span>Midnight Deep</span>
+            </button>
+            <button class="op-theme-card" data-theme-name="oled">
+              <div class="op-theme-swatch" style="background: #000000; border-color: #22C55E;"></div>
+              <span>Pure OLED</span>
+            </button>
+            <button class="op-theme-card" data-theme-name="lunar">
+              <div class="op-theme-swatch" style="background: #181920; border-color: #A78BFA;"></div>
+              <span>Lunar Violet</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="op-settings-card">
+          <h3 class="op-settings-title">Privacy & Telemetry</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 13px; color: var(--op-text-primary); font-weight: 500;">Zero External Telemetry</div>
+              <div style="font-size: 11px; color: var(--op-text-secondary);">No tracking, analytics, or workflow payloads leave your device.</div>
+            </div>
+            <span style="font-family: var(--op-font-mono); font-size: 11px; color: #22c55e; font-weight: 600;">ACTIVE (ENFORCED)</span>
+          </div>
+        </div>
+
+        <div class="op-settings-card">
+          <h3 class="op-settings-title">Commercial Entitlements & License</h3>
+          <div style="background: var(--op-surface-0); padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--op-border-faint);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 13px; font-weight: 600;">Current License Tier:</span>
+              <span id="settingsCurrentTier" style="font-family: var(--op-font-mono); font-weight: 700; color: var(--op-accent);">FREE COMMUNITY CORE</span>
+            </div>
+            <div id="settingsTrialBanner" style="font-size: 12px; color: var(--op-text-secondary);">All 30 core recipes remain free forever. Pro unlocks unlimited custom workflows, large-scale batch file pipelines, developer tool packs, and local AI compiler.</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <button class="op-btn-primary" id="settingsStartTrialBtn" style="padding: 10px;">⚡ Start 14-Day Free Trial (No Card)</button>
+            <button class="op-btn-secondary" id="settingsSandboxBuyBtn" style="padding: 10px;">💳 Simulate Pro Purchase ($79 Lifetime)</button>
+          </div>
+
+          <label class="op-form-label">Activate Cryptographic Offline License Key</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="settingsKeyInput" class="op-input" placeholder="OPKEY-..." style="font-family: var(--op-font-mono); font-size: 12px;" />
+            <button class="op-btn-secondary" id="settingsKeyActivateBtn">Verify & Activate</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- VIEW 6: ONBOARDING TOUR -->
+    <main class="op-view" id="viewOnboarding">
+      <div class="op-onboarding-layout">
+        <div class="op-onboarding-card">
+          <div class="op-onboarding-badge">WELCOME TO OPERON</div>
+          <h2 style="font-size: 22px; color: var(--op-text-primary); margin: 8px 0 12px 0;">The Autonomous Personal Operating Layer</h2>
+          <p style="font-size: 14px; color: var(--op-text-secondary); line-height: 1.6; margin-bottom: 24px;">
+            Operon is a commercial, deterministic automation engine that bridges desktop OS interactions, file transformations, and offline local AI into sub-millisecond workflows.
+          </p>
+
+          <div class="op-tour-grid">
+            <div class="op-tour-step">
+              <div class="op-tour-step-num">1</div>
+              <div class="op-tour-step-title">Quick HUD (Alt+Space)</div>
+              <div class="op-tour-step-desc">Summon the instant command palette anywhere on Windows and macOS. Type natural language or browse 30 recipes.</div>
+            </div>
+            <div class="op-tour-step">
+              <div class="op-tour-step-num">2</div>
+              <div class="op-tour-step-title">Workflow Studio (When/Check/Do)</div>
+              <div class="op-tour-step-desc">Build deterministic pipelines visually. Configure triggers, condition gates, and typed actions with real execution tests.</div>
+            </div>
+            <div class="op-tour-step">
+              <div class="op-tour-step-num">3</div>
+              <div class="op-tour-step-title">100% Offline & Private</div>
+              <div class="op-tour-step-desc">Your clipboard, files, and tokens never touch the cloud. Cryptographic offline licensing requires zero periodic check-ins.</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 32px; text-align: center;">
+            <button class="op-btn-primary" id="onboardingLaunchBtn" style="padding: 12px 28px; font-size: 14px;">⚡ Open Quick HUD (Alt+Space)</button>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
-  <!-- Plan Preview Modal (Quarantine Sandbox) -->
+  <!-- Plan Preview Modal -->
   <div class="op-modal-backdrop" id="opModalBackdrop" style="display: none;">
     <div class="op-modal">
       <div class="op-modal-header">
         <h3 id="opModalTitle">Automation Plan Preview</h3>
         <button class="op-modal-close" id="opModalCloseBtn">&times;</button>
       </div>
-      <div class="op-modal-body" id="opModalBody">
-        <!-- Injected dynamically -->
-      </div>
+      <div class="op-modal-body" id="opModalBody"></div>
       <div class="op-modal-footer">
         <button class="op-btn-secondary" id="opModalCancelBtn">Cancel</button>
         <button class="op-btn-primary" id="opModalExecuteBtn">Approve & Execute</button>
@@ -92,7 +368,7 @@
     </div>
   </div>
 
-  <!-- Upgrade & License Activation Modal -->
+  <!-- Upgrade Modal -->
   <div class="op-modal-backdrop" id="opUpgradeModalBackdrop" style="display: none;">
     <div class="op-modal">
       <div class="op-modal-header">
@@ -105,7 +381,7 @@
             Current Status: <span id="opCurrentStatusText" style="color: var(--op-accent);">Free Community Core</span>
           </div>
           <p style="font-size: 12px; color: var(--op-text-secondary); margin: 0;">
-            All 15 core recipes and sub-1ms execution remain free forever. Pro unlocks unlimited custom workflows, large-scale batch file pipelines, developer tool packs, and local AI.
+            All 30 core recipes and sub-1ms execution remain free forever. Pro unlocks unlimited custom workflows, large-scale batch file pipelines, developer tool packs, and local AI.
           </p>
         </div>
 

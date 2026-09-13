@@ -315,5 +315,154 @@ export const textActions = [
         readingTimeSeconds
       };
     }
+  },
+
+  {
+    id: 'text.strip_formatting',
+    name: 'Strip Formatting & HTML Tags',
+    description: 'Converts HTML, Markdown, or RTF text to pure, clean unformatted plain text.',
+    category: Categories.TEXT,
+    requiredCapabilities: [],
+    supportedPlatforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
+    schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string' }
+      },
+      required: ['text']
+    },
+    async execute({ text }) {
+      if (!text || typeof text !== 'string') return { plainText: '' };
+
+      let cleaned = text
+        // Strip HTML tags
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<\/?[^>]+(>|$)/g, '')
+        // HTML entities
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        // Strip Markdown links: [text](url) -> text
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // Strip Markdown headers (# Header)
+        .replace(/^#{1,6}\s+/gm, '')
+        // Strip bold / italic (* / _)
+        .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+        // Strip inline code `code` -> code
+        .replace(/`([^`]+)`/g, '$1')
+        // Normalize whitespace
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+      return { plainText: cleaned, originalLength: text.length, cleanedLength: cleaned.length };
+    }
+  },
+
+  {
+    id: 'text.word_count',
+    name: 'Calculate Word & Text Statistics',
+    description: 'Computes words, characters, sentences, paragraphs, reading time, and speaking time.',
+    category: Categories.TEXT,
+    requiredCapabilities: [],
+    supportedPlatforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
+    schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string' }
+      },
+      required: ['text']
+    },
+    async execute({ text }) {
+      if (!text || typeof text !== 'string') {
+        return {
+          words: 0,
+          characters: 0,
+          charactersNoSpaces: 0,
+          sentences: 0,
+          paragraphs: 0,
+          readingMinutes: 0
+        };
+      }
+
+      const trimmed = text.trim();
+      const words = trimmed ? (trimmed.match(/[\p{L}\p{N}_\-]+/gu) || []).length : 0;
+      const characters = text.length;
+      const charactersNoSpaces = text.replace(/\s/g, '').length;
+      const sentences = trimmed ? (trimmed.split(/[.!?]+(?:\s+|$)/).filter(Boolean)).length : 0;
+      const paragraphs = trimmed ? (trimmed.split(/\n{2,}/).filter(p => p.trim().length > 0)).length : 0;
+      const readingMinutes = Math.round((words / 225) * 10) / 10;
+
+      return {
+        words,
+        characters,
+        charactersNoSpaces,
+        sentences,
+        paragraphs,
+        readingMinutes
+      };
+    }
+  },
+
+  {
+    id: 'text.slugify',
+    name: 'Generate URL-Friendly Slug',
+    description: 'Converts any title or phrase into a clean URL slug (e.g., "My Post Title" -> "my-post-title").',
+    category: Categories.TEXT,
+    requiredCapabilities: [],
+    supportedPlatforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
+    schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string' },
+        separator: { type: 'string', default: '-' },
+        lowercase: { type: 'boolean', default: true }
+      },
+      required: ['text']
+    },
+    async execute({ text, separator = '-', lowercase = true }) {
+      if (!text || typeof text !== 'string') return { slug: '' };
+
+      let s = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (lowercase) s = s.toLowerCase();
+      s = s
+        .replace(/[^a-zA-Z0-9\s_-]/g, '')
+        .trim()
+        .replace(/[\s_-]+/g, separator)
+        .replace(new RegExp(`^${separator}+|${separator}+$`, 'g'), '');
+
+      return { slug: s };
+    }
+  },
+
+  {
+    id: 'text.template_render',
+    name: 'Render Text Template',
+    description: 'Substitutes variable placeholders {{var}} or ${var} inside a template string.',
+    category: Categories.TEXT,
+    requiredCapabilities: [],
+    supportedPlatforms: [Platforms.WINDOWS, Platforms.MACOS, Platforms.ANDROID, Platforms.IOS],
+    schema: {
+      type: 'object',
+      properties: {
+        template: { type: 'string' },
+        variables: { type: 'object' }
+      },
+      required: ['template', 'variables']
+    },
+    async execute({ template, variables = {} }) {
+      if (!template || typeof template !== 'string') return { result: '' };
+
+      const rendered = template.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (match, key) => {
+        const val = key.split('.').reduce((obj, part) => obj && obj[part] !== undefined ? obj[part] : undefined, variables);
+        return val !== undefined ? String(val) : match;
+      });
+
+      return { result: rendered };
+    }
   }
 ];

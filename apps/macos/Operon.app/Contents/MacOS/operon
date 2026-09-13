@@ -1,0 +1,18 @@
+#!/bin/bash
+# OPERON macOS Application Launcher
+DIR="$(cd "$(dirname "$0")/../Resources" && pwd)"
+export NODE_ENV=production
+export OPERON_PLATFORM=macos
+
+# Launch background server & HUD
+if command -v node >/dev/null 2>&1; then
+    exec node "$DIR/apps/desktop/src/main.js"
+else
+    # Fallback to bundled Node binary if available
+    if [ -f "$DIR/bin/node" ]; then
+        exec "$DIR/bin/node" "$DIR/apps/desktop/src/main.js"
+    else
+        osascript -e 'display alert "Operon Error" message "Node.js runtime required to execute Operon. Please install from https://nodejs.org."'
+        exit 1
+    fi
+fi
