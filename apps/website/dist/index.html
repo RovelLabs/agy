@@ -1,76 +1,4 @@
-/**
- * OPERON Official Commercial Website & Edge Application
- * Cloudflare Worker / Edge Runtime Distribution
- * Compatible with Worker 'yellow-water-78f7' and Cloudflare Pages
- */
-
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    // API Routes
-    if (path === '/api/health') {
-      return new Response(JSON.stringify({
-        status: 'healthy',
-        product: 'OPERON',
-        version: env.VERSION || '1.0.0-rc.1',
-        environment: env.ENVIRONMENT || 'production',
-        timestamp: new Date().toISOString()
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (path === '/api/version') {
-      return new Response(JSON.stringify({
-        version: '1.0.0-rc.1',
-        channel: 'release-candidate',
-        releaseDate: '2026-09-13',
-        downloads: {
-          windows: { filename: 'Operon-Setup-1.0.0-rc.1.exe', status: 'available' },
-          macos: { filename: 'Operon-1.0.0-rc.1.dmg', status: 'available' },
-          android: { filename: 'Operon-1.0.0-rc.1.apk', status: 'available' },
-          ios: { status: 'testflight-ready' }
-        }
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (path === '/robots.txt') {
-      return new Response("User-agent: *\nAllow: /\nSitemap: https://operon.dev/sitemap.xml", {
-        headers: { 'Content-Type': 'text/plain' }
-      });
-    }
-
-    if (path === '/sitemap.xml') {
-      return new Response(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://operon.dev/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://operon.dev/#downloads</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://operon.dev/#pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-</urlset>`, {
-        headers: { 'Content-Type': 'application/xml' }
-      });
-    }
-
-    // Serve Complete Production HTML Application
-    const html = renderFullWebsite();
-    return new Response(html, {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300, s-maxage=3600',
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'Referrer-Policy': 'strict-origin-when-cross-origin'
-      }
-    });
-  }
-};
-
-export function renderFullWebsite() {
-  return `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="graphite" data-lang="en">
 <head>
   <meta charset="UTF-8">
@@ -849,7 +777,7 @@ export function renderFullWebsite() {
           <p class="diff-desc" data-i18n="diff_1_desc">Opening Photoshop or an online converter, waiting for uploads, manually typing dates, and moving files one by one.</p>
           <div class="diff-stat">
             <span class="diff-badge-after" data-i18n="diff_badge_operon">WITH OPERON: 0.4 SECONDS</span>
-            <span>Drag & Drop $\rightarrow$ 85% Space Saved</span>
+            <span>Drag & Drop $ightarrow$ 85% Space Saved</span>
           </div>
         </div>
 
@@ -862,7 +790,7 @@ export function renderFullWebsite() {
           <p class="diff-desc" data-i18n="diff_2_desc">Carefully highlighting and deleting utm_source, fbclid, and gclid tokens from messy links before sharing in chat.</p>
           <div class="diff-stat">
             <span class="diff-badge-after" data-i18n="diff_badge_operon">WITH OPERON: 10 MILLISECONDS</span>
-            <span>Alt+Space $\rightarrow$ Enter $\rightarrow$ Cleaned</span>
+            <span>Alt+Space $ightarrow$ Enter $ightarrow$ Cleaned</span>
           </div>
         </div>
 
@@ -875,7 +803,7 @@ export function renderFullWebsite() {
           <p class="diff-desc" data-i18n="diff_3_desc">Copying Excel or Google Sheets into GitHub or Notion results in unaligned tabs and broken text lines.</p>
           <div class="diff-stat">
             <span class="diff-badge-after" data-i18n="diff_badge_operon">WITH OPERON: INSTANT</span>
-            <span>Tabular TSV $\rightarrow$ GitHub Markdown Table</span>
+            <span>Tabular TSV $ightarrow$ GitHub Markdown Table</span>
           </div>
         </div>
 
@@ -888,7 +816,7 @@ export function renderFullWebsite() {
           <p class="diff-desc" data-i18n="diff_4_desc">Pasting proprietary API payloads and authentication tokens into third-party online tools exposes private credentials.</p>
           <div class="diff-stat">
             <span class="diff-badge-after" data-i18n="diff_badge_operon">WITH OPERON: 100% PRIVATE</span>
-            <span>Zero Network Calls $\rightarrow$ Offline Parse</span>
+            <span>Zero Network Calls $ightarrow$ Offline Parse</span>
           </div>
         </div>
       </div>
@@ -1590,31 +1518,58 @@ export function renderFullWebsite() {
     const hudPresets = {
       clean_url: {
         input: "https://shop.example.com/item?id=8841&utm_source=twitter&utm_medium=cpc&utm_campaign=summer_promo&fbclid=IwAR0491823&igshid=op_test",
-        output: "✓ Clean URL (Stripped 5 tracking parameters in 0.04ms):\n\nhttps://shop.example.com/item?id=8841",
+        output: "✓ Clean URL (Stripped 5 tracking parameters in 0.04ms):
+
+https://shop.example.com/item?id=8841",
         speed: "0.04 ms",
         size: "148 B"
       },
       format_json: {
         input: '{"service":"operon","version":"1.0.0","capabilities":["dag_engine","offline_ai","sub_ms_latency"],"active":true}',
-        output: '✓ Formatted & Validated JSON (2-space indent in 0.08ms):\n\n{\n  "service": "operon",\n  "version": "1.0.0",\n  "capabilities": [\n    "dag_engine",\n    "offline_ai",\n    "sub_ms_latency"\n  ],\n  "active": true\n}',
+        output: '✓ Formatted & Validated JSON (2-space indent in 0.08ms):
+
+{
+  "service": "operon",
+  "version": "1.0.0",
+  "capabilities": [
+    "dag_engine",
+    "offline_ai",
+    "sub_ms_latency"
+  ],
+  "active": true
+}',
         speed: "0.08 ms",
         size: "115 B"
       },
       tsv_md: {
-        input: "ID\tAction\tDomain\tLatency\n1\tClean URL\tText\t0.04ms\n2\tFormat JSON\tDev\t0.08ms\n3\tWebP Convert\tImage\tNative",
-        output: "| ID | Action | Domain | Latency |\n| --- | --- | --- | --- |\n| 1 | Clean URL | Text | 0.04ms |\n| 2 | Format JSON | Dev | 0.08ms |\n| 3 | WebP Convert | Image | Native |",
+        input: "ID	Action	Domain	Latency
+1	Clean URL	Text	0.04ms
+2	Format JSON	Dev	0.08ms
+3	WebP Convert	Image	Native",
+        output: "| ID | Action | Domain | Latency |
+| --- | --- | --- | --- |
+| 1 | Clean URL | Text | 0.04ms |
+| 2 | Format JSON | Dev | 0.08ms |
+| 3 | WebP Convert | Image | Native |",
         speed: "0.12 ms",
         size: "96 B"
       },
       rename_files: {
-        input: "[50 files selected in Downloads]\nScreenshot_2026-09-13_14-22-01.png\nScreenshot_2026-09-13_14-22-34.png\n... (+48 items)",
-        output: "✓ Batch Renamed 50 Files ({date}_{counter}_{name}.ext in 0.32ms):\n\n20260913_001_Screenshot.webp (Space saved: 82%)\n20260913_002_Screenshot.webp (Space saved: 84%)\n... (+48 files safely converted)",
+        input: "[50 files selected in Downloads]
+Screenshot_2026-09-13_14-22-01.png
+Screenshot_2026-09-13_14-22-34.png
+... (+48 items)",
+        output: "✓ Batch Renamed 50 Files ({date}_{counter}_{name}.ext in 0.32ms):
+
+20260913_001_Screenshot.webp (Space saved: 82%)
+20260913_002_Screenshot.webp (Space saved: 84%)
+... (+48 files safely converted)",
         speed: "0.32 ms",
         size: "50 files"
       },
       ai_intent: {
         input: 'User Intent: "When I copy an image link, download it, convert to WebP, and copy markdown embed tag"',
-        output: "✓ Local AI Intent Compiler (Tier 1 Grammatical AST assembled in 2.68ms):\\n\\nPlan Synthesized:\\n1. clipboard.read (Link detected)\\n2. image.convert_format (format: 'webp', quality: 85)\\n3. text.template ('![image](step2.path)')\\n4. clipboard.write (Markdown ready)\\n\\n[Human Preview Approved • Stored Deterministically]",
+        output: "✓ Local AI Intent Compiler (Tier 1 Grammatical AST assembled in 2.68ms):\n\nPlan Synthesized:\n1. clipboard.read (Link detected)\n2. image.convert_format (format: 'webp', quality: 85)\n3. text.template ('![image](step2.path)')\n4. clipboard.write (Markdown ready)\n\n[Human Preview Approved • Stored Deterministically]",
         speed: "2.68 ms",
         size: "Prompt"
       }
@@ -1639,5 +1594,4 @@ export function renderFullWebsite() {
     setPreset('clean_url');
   </script>
 </body>
-</html>`;
-}
+</html>

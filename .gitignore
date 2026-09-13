@@ -6,6 +6,7 @@ target/
 .gradle/
 build/
 dist/
+!apps/website/dist/
 out/
 
 # Environments and Secrets

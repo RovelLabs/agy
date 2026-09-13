@@ -62,3 +62,19 @@
 - `AI_ARCHITECTURE.md`: Local AI intent compiler, GBNF schema constraints, and evaluation tiers.
 - `MONETIZATION.md`: Anti-subscription fatigue commercial model, Free vs Pro tiers, international pricing.
 - `PLATFORM_LIMITATIONS.md`: Honest platform capability disclosures across Windows, macOS, Android, and iOS.
+
+---
+
+## 5. Official Website & Deployment Artifacts
+- **Package Archive:** `OPERON-WEBSITE-DEPLOY.zip` (42.7 KB, 11 files, verified)
+- **Local Uncompressed Build:** `apps/website/dist/` (static distribution) & `apps/website/src/` (edge worker)
+- **Deployment Channels Supported:**
+  1. **Cloudflare Dashboard Quick-Paste:** Copy `apps/website/src/index.js` directly into Worker editor.
+  2. **Cloudflare Pages:** Drag-and-drop `apps/website/dist/` folder into Pages dashboard.
+  3. **Wrangler CLI:** Run `npx wrangler deploy` from `apps/website/` or extracted zip.
+- **Verification Gates Passed:**
+  - Mandatory file presence check (Worker, static HTML, robots, sitemap, wrangler config, DEPLOY.md, .env.example).
+  - Automated secret scanner (zero API keys, zero private keys, zero tokens).
+  - Standalone Node.js Worker test: Health check OK (`{"status":"healthy"}`), HTML render OK (73,240 bytes).
+  - Wrangler dry-run validation: 93.02 KiB upload / 19.56 KiB gzip, bindings confirmed.
+
