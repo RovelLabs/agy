@@ -24,13 +24,13 @@ export default {
 
     if (path === '/api/version') {
       return new Response(JSON.stringify({
-        version: '1.0.0-rc.1',
+        version: '1.0.0-rc.2',
         channel: 'release-candidate',
-        releaseDate: '2026-09-13',
+        releaseDate: '2026-09-14',
         downloads: {
-          windows: { filename: 'Operon-Setup-1.0.0-rc.1.exe', status: 'available' },
-          macos: { filename: 'Operon-1.0.0-rc.1.dmg', status: 'available' },
-          android: { filename: 'Operon-1.0.0-rc.1.apk', status: 'available' },
+          windows: { filename: 'OPERON-Windows-Installer-v1.0.0.zip', status: 'available', sizeBytes: 34461459 },
+          macos: { filename: 'OPERON-macOS-Universal-v1.0.0.tar.gz', status: 'available', sizeBytes: 60825 },
+          android: { filename: 'Operon-1.0.0.apk', status: 'available' },
           ios: { status: 'testflight-ready' }
         }
       }), {

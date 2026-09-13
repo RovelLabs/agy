@@ -1,61 +1,66 @@
-# OPERON Official Website: Cloudflare Manual Deployment Guide
+# OPERON Official Website: Cloudflare Deployment Guide
 
-This package contains the complete production-ready website build for **OPERON**, configured for deployment on Cloudflare (Worker: `yellow-water-78f7` / Cloudflare Pages).
-
----
-
-## Deployment Option 1: Cloudflare Dashboard Quick Editor (Easiest & Fastest)
-
-1. Log in to your Cloudflare Dashboard and navigate to:
-   👉 [Cloudflare Worker Editor for `yellow-water-78f7`](https://dash.cloudflare.com/0a4357eeb937ef38bc7b1889527e12c8/workers/services/edit/yellow-water-78f7/production)
-2. Open the file `src/index.js` from this package.
-3. Select All (`Ctrl+A`) and Copy (`Ctrl+C`).
-4. Paste into the Cloudflare Web Editor, replacing the existing code.
-5. Click **Deploy** (top right).
-6. Verify your site at:
-   `https://yellow-water-78f7.rovel.workers.dev` (or your connected custom domain).
+This package contains the complete production-grade website for **OPERON**, prepared for direct deployment to Cloudflare Pages (or Cloudflare Workers).
 
 ---
 
-## Deployment Option 2: Wrangler CLI
+## ⚡ Deployment Option 1: Cloudflare Pages Direct ZIP Upload (Zero Configuration, Fastest)
 
-If you have Wrangler CLI or an authenticated terminal:
+1. Open the Cloudflare Dashboard: **[dash.cloudflare.com](https://dash.cloudflare.com)**
+2. In the left navigation menu, click **Workers & Pages** $\rightarrow$ **Create application**
+3. Select the **Pages** tab at the top
+4. Click **Upload assets**
+5. Enter a project name (e.g. `operon` or `operon-website`)
+6. Under **Upload assets**, drag and drop the file:
+   `OPERON-WEBSITE-DEPLOY.zip` (located in project root or `apps/website/`)
+7. Click **Deploy site**
+
+✅ **Done!** Cloudflare Pages immediately unzips the assets:
+- `index.html` is at the root $\rightarrow$ Instant responsive landing page with interactive HUD, themes, and pricing.
+- `404.html` $\rightarrow$ Custom branded 404 error page.
+- `functions/api/health.js` $\rightarrow$ Edge serverless health check at `/api/health`.
+- `functions/api/version.js` $\rightarrow$ Edge serverless release metadata at `/api/version`.
+- `_headers` $\rightarrow$ Enterprise HTTP security headers (CSP, HSTS, X-Frame-Options) and asset caching.
+- `_redirects` $\rightarrow$ Direct redirects for `/github` and `/docs`.
+
+---
+
+## 🛠️ Deployment Option 2: Wrangler CLI
+
+If you have Node.js and Wrangler installed:
+
 ```bash
-# 1. Install dependencies
-npm install
+# Option A: Deploy to Cloudflare Pages via CLI
+npx wrangler pages deploy . --project-name=operon
 
-# 2. Deploy to Cloudflare Worker
+# Option B: Deploy as a Cloudflare Worker (Worker ID: yellow-water-78f7)
 npx wrangler deploy
 ```
 
-*Required Environment Variables (already configured in `wrangler.toml`):*
-* `ENVIRONMENT = "production"`
-* `VERSION = "1.0.0-rc.1"`
-* `BRAND_NAME = "OPERON"`
+---
+
+## 💻 Deployment Option 3: Cloudflare Dashboard Quick Web Editor
+
+1. Open: [Cloudflare Worker Web Editor](https://dash.cloudflare.com/0a4357eeb937ef38bc7b1889527e12c8/workers/services/edit/yellow-water-78f7/production)
+2. Copy the entire contents of `apps/website/src/index.js` (or `worker.js` from the zip).
+3. Paste into the web editor and click **Deploy**.
 
 ---
 
-## Deployment Option 3: Cloudflare Pages (Direct Drag & Drop)
+## 🔍 Verification Checklist
 
-If you prefer Cloudflare Pages static hosting:
-1. Open Cloudflare Dashboard $\rightarrow$ **Workers & Pages** $\rightarrow$ **Create Application** $\rightarrow$ **Pages** $\rightarrow$ **Upload Assets**.
-2. Project name: `operon-website`
-3. Drag and drop the `dist/` folder from this package.
-4. Click **Deploy site**.
-
----
-
-## Verification Endpoints
-
-Once deployed, verify that all routes respond:
-- `GET /` $\rightarrow$ Complete responsive landing page & interactive HUD (HTTP 200)
-- `GET /api/health` $\rightarrow$ JSON health status `{"status": "healthy", "product": "OPERON"}`
-- `GET /api/version` $\rightarrow$ JSON version and download catalog
-- `GET /robots.txt` $\rightarrow$ SEO crawler directives
-- `GET /sitemap.xml` $\rightarrow$ XML sitemap
+After deploying, verify the following URLs:
+- `https://<your-project>.pages.dev/` $\rightarrow$ Full responsive website with interactive Command HUD (HTTP 200)
+- `https://<your-project>.pages.dev/api/health` $\rightarrow$ `{"status": "healthy", "product": "OPERON"}` (HTTP 200)
+- `https://<your-project>.pages.dev/api/version` $\rightarrow$ `{"version": "1.0.0-rc.2", "channel": "release-candidate"}` (HTTP 200)
+- `https://<your-project>.pages.dev/robots.txt` $\rightarrow$ Crawler indexing rules (HTTP 200)
+- `https://<your-project>.pages.dev/sitemap.xml` $\rightarrow$ Search engine XML sitemap (HTTP 200)
+- `https://<your-project>.pages.dev/unmapped-path` $\rightarrow$ Custom 404 error page (HTTP 404)
+- `https://<your-project>.pages.dev/github` $\rightarrow$ Redirects to `https://github.com/RovelLabs/agy` (HTTP 302)
 
 ---
 
-## Security Audit
-* **Zero Credentials Included:** This deployment package contains no API tokens, GitHub secrets, or private keys.
-* **100% Client-Side Local:** All interactive demo transformations run in-memory within the visitor's browser.
+## 🔒 Security Audit & Privacy Guarantee
+
+- **Zero API Keys / Secrets:** This package contains no credentials or private keys.
+- **Client-Side Simulation:** The interactive HUD operates 100% locally in the user's browser using deterministic Web APIs.

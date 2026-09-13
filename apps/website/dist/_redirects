@@ -1,0 +1,4 @@
+# Cloudflare Pages Redirects
+/github   https://github.com/RovelLabs/agy   302
+/repo     https://github.com/RovelLabs/agy   302
+/docs     https://github.com/RovelLabs/agy   302
