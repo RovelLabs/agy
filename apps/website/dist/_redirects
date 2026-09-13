@@ -1,4 +1,8 @@
-# Cloudflare Pages Redirects
-/github   https://github.com/RovelLabs/agy   302
-/repo     https://github.com/RovelLabs/agy   302
-/docs     https://github.com/RovelLabs/agy   302
+# Cloudflare Pages 200 Rewrites (Serves static JSON for API routes)
+/api/health   /api/health.json   200
+/api/version  /api/version.json  200
+
+# External 302 Redirects
+/github       https://github.com/RovelLabs/agy   302
+/repo         https://github.com/RovelLabs/agy   302
+/docs         https://github.com/RovelLabs/agy   302

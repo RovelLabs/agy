@@ -1,8 +1,0 @@
-name = "operon-website"
-compatibility_date = "2026-09-01"
-pages_build_output_dir = "."
-
-[vars]
-ENVIRONMENT = "production"
-VERSION = "1.0.0-rc.2"
-BRAND_NAME = "OPERON"
